@@ -1,0 +1,964 @@
+//
+//  THIS IS NOT OPEN SOURCE OR PUBLIC DOMAIN SOFTWARE
+//
+// See README-LCALS_license.txt for access and distribution restrictions
+//
+
+//
+// Source file containing LCALS "A" subset forall lambda loops
+//     with type information "fix" 
+//
+
+#include "LCALSSuite.hxx"
+#include "LCALSTraversalMethods.hxx"
+
+#include "SubsetDataA.hxx"
+
+#include<cstdlib>
+#include<iostream>
+#include<cmath>
+
+
+void runOMPForallLambdaLoops_TYPEFIX( std::vector<LoopStat>& loop_stats,
+                                      bool run_loop[],
+                                      LoopLength ilength )
+{
+   LoopSuiteRunInfo& loop_suite_run_info = getLoopSuiteRunInfo();
+   LoopData& loop_data = getLoopData();
+
+#if defined(COMPILE_LAMBDA_VARIANTS) && defined(COMPILE_OMP_VARIANTS)
+
+   for (unsigned iloop = 0; iloop < loop_suite_run_info.num_loops; ++iloop) {
+
+      if ( run_loop[iloop] ) {
+
+         LoopStat& stat = loop_stats[iloop];
+         Index_type len = stat.loop_length[ilength];
+         int num_samples = stat.samples_per_pass[ilength];
+#if defined(LCALS_VERIFY_CHECKSUM_ABBREVIATED)
+         num_samples = num_checksum_samples;
+#endif
+
+         LoopTimer ltimer;
+
+         switch ( iloop ) {
+
+#if defined(COMPILE_PRESSURE_CALC)
+          case PRESSURE_CALC : {  // --> from subset "A"
+
+            loopInit(iloop, stat);
+
+            Real_ptr compression = loop_data.array_1D_Real[0];
+            Real_ptr bvc = loop_data.array_1D_Real[1];
+            Real_ptr p_new = loop_data.array_1D_Real[2];
+            Real_ptr e_old = loop_data.array_1D_Real[3];
+            Real_ptr vnewc = loop_data.array_1D_Real[4];
+
+            const Real_type cls = loop_data.scalar_Real[0];
+            const Real_type p_cut = loop_data.scalar_Real[1];
+            const Real_type pmin = loop_data.scalar_Real[2];
+            const Real_type eosvmax = loop_data.scalar_Real[3];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+             #pragma omp parallel
+              {
+               forall<omp_for_nowait_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr tcompression = compression;
+                 Real_ptr tbvc = bvc;
+                 tbvc[i] = cls * (tcompression[i] + 1.0);
+               } );
+
+               forall<omp_for_nowait_exec>(0, len,
+               [&] (Index_type i) {
+                  Real_ptr tp_new = p_new;
+                  Real_ptr tbvc = bvc;
+                  Real_ptr te_old = e_old;
+                  Real_ptr tvnewc = vnewc;
+                  tp_new[i] = tbvc[i] * te_old[i] ;
+
+                  if ( fabs(tp_new[i]) <  p_cut )  tp_new[i] = 0.0 ;
+
+                  if ( tvnewc[i] >= eosvmax )  tp_new[i] = 0.0 ;
+
+                  if ( tp_new[i]  <  pmin )  tp_new[i] = pmin ;
+               } );
+              }  // omp parallel
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_PRESSURE_CALC_ALT)
+          case PRESSURE_CALC_ALT : {  // --> from subset "A"
+
+//
+// NOTE: This is a slight variation on the OpenMP execution pattern
+//       in the kernel above.
+//
+
+            loopInit(iloop, stat);
+
+            Real_ptr compression = loop_data.array_1D_Real[0];
+            Real_ptr bvc = loop_data.array_1D_Real[1];
+            Real_ptr p_new = loop_data.array_1D_Real[2];
+            Real_ptr e_old = loop_data.array_1D_Real[3];
+            Real_ptr vnewc = loop_data.array_1D_Real[4];
+
+            const Real_type cls = loop_data.scalar_Real[0];
+            const Real_type p_cut = loop_data.scalar_Real[1];
+            const Real_type pmin = loop_data.scalar_Real[2];
+            const Real_type eosvmax = loop_data.scalar_Real[3];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               forall<omp_parallel_for_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr tcompression = compression;
+                 Real_ptr tbvc = bvc;
+                 tbvc[i] = cls * (tcompression[i] + 1.0);
+               } );
+
+               forall<omp_parallel_for_exec>(0, len,
+               [&] (Index_type i) {
+                  Real_ptr tp_new = p_new;
+                  Real_ptr tbvc = bvc;
+                  Real_ptr te_old = e_old;
+                  Real_ptr tvnewc = vnewc;
+                  tp_new[i] = tbvc[i] * te_old[i] ;
+
+                  if ( fabs(tp_new[i]) <  p_cut )  tp_new[i] = 0.0 ;
+
+                  if ( tvnewc[i] >= eosvmax )  tp_new[i] = 0.0 ;
+
+                  if ( tp_new[i]  <  pmin )  tp_new[i] = pmin ;
+               } );
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_ENERGY_CALC)
+          case ENERGY_CALC : {  // --> from subset "A"
+
+            loopInit(iloop, stat);
+
+            Real_ptr e_new = loop_data.array_1D_Real[0];
+            Real_ptr e_old = loop_data.array_1D_Real[1];
+            Real_ptr delvc = loop_data.array_1D_Real[2];
+            Real_ptr p_new = loop_data.array_1D_Real[3];
+            Real_ptr p_old = loop_data.array_1D_Real[4];
+            Real_ptr q_new = loop_data.array_1D_Real[5];
+            Real_ptr q_old = loop_data.array_1D_Real[6];
+            Real_ptr work = loop_data.array_1D_Real[7];
+            Real_ptr compHalfStep = loop_data.array_1D_Real[8];
+            Real_ptr pHalfStep = loop_data.array_1D_Real[9];
+            Real_ptr bvc = loop_data.array_1D_Real[10];
+            Real_ptr pbvc = loop_data.array_1D_Real[11];
+            Real_ptr ql_old = loop_data.array_1D_Real[12];
+            Real_ptr qq_old = loop_data.array_1D_Real[13];
+            Real_ptr vnewc = loop_data.array_1D_Real[14];
+
+            const Real_type rho0 = loop_data.scalar_Real[0];
+            const Real_type e_cut = loop_data.scalar_Real[1];
+            const Real_type emin = loop_data.scalar_Real[2];
+            const Real_type q_cut = loop_data.scalar_Real[3];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+              #pragma omp parallel
+              {
+               forall<omp_for_nowait_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr te_new = e_new;
+                 Real_ptr te_old = e_old;
+                 Real_ptr tdelvc = delvc;
+                 Real_ptr tp_old = p_old;
+                 Real_ptr tq_old = q_old;
+                 Real_ptr twork = work;
+                 te_new[i] = te_old[i] - 0.5 * tdelvc[i] *
+                            (tp_old[i] + tq_old[i]) + 0.5 * twork[i];
+               } );
+
+               forall<omp_for_nowait_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr tq_new = q_new;
+                 Real_ptr tdelvc = delvc;
+                 Real_ptr tcompHalfStep = compHalfStep;
+                 Real_ptr tpHalfStep = pHalfStep;
+                 Real_ptr te_new = e_new;
+                 Real_ptr tbvc = bvc;
+                 Real_ptr tpbvc = pbvc;
+                 Real_ptr tql_old = ql_old;
+                 Real_ptr tqq_old = qq_old;
+                 if ( tdelvc[i] > 0.0 ) {
+                    tq_new[i] = 0.0 ;
+                 }
+                 else {
+                    Real_type vhalf = 1.0 / (1.0 + tcompHalfStep[i]) ;
+                    Real_type ssc = ( tpbvc[i] * te_new[i]
+                       + vhalf * vhalf * tbvc[i] * tpHalfStep[i] ) / rho0 ;
+
+                    if ( ssc <= 0.1111111e-36 ) {
+                       ssc = 0.3333333e-18 ;
+                    } else {
+                       ssc = sqrt(ssc) ;
+                    }
+
+                    tq_new[i] = (ssc*tql_old[i] + tqq_old[i]) ;
+                 }
+               } );
+
+               forall<omp_for_nowait_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr te_new = e_new;
+                 Real_ptr tdelvc = delvc;
+                 Real_ptr tpHalfStep = pHalfStep;
+                 Real_ptr tp_old = p_old;
+                 Real_ptr tq_old = q_old;
+                 Real_ptr tq_new = q_new;
+                 te_new[i] = te_new[i] + 0.5 * tdelvc[i]
+                    * ( 3.0*(tp_old[i] + tq_old[i])
+                         - 4.0*(tpHalfStep[i] + tq_new[i])) ;
+               } );
+
+               forall<omp_for_nowait_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr te_new = e_new;
+                 Real_ptr twork = work;
+                 te_new[i] += 0.5 * twork[i];
+
+                 if ( fabs(te_new[i]) < e_cut ) { te_new[i] = 0.0  ; }
+
+                 if ( te_new[i]  < emin ) { te_new[i] = emin ; }
+               } );
+
+               forall<omp_for_nowait_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr tq_new = q_new;
+                 Real_ptr tdelvc = delvc;
+                 Real_ptr te_new = e_new;
+                 Real_ptr tp_new = p_new;
+                 Real_ptr tvnewc = vnewc;
+                 Real_ptr tbvc = bvc;
+                 Real_ptr tpbvc = pbvc;
+                 Real_ptr tql_old = ql_old;
+                 Real_ptr tqq_old = qq_old;
+                 Real_ptr tp_old = p_old;
+                 Real_ptr tq_old = q_old;
+                 Real_ptr tpHalfStep = pHalfStep;
+
+                 Real_type q_tilde ;
+
+                 if (tdelvc[i] > 0.0) {
+                    q_tilde = 0. ;
+                 }
+                 else {
+                    Real_type ssc = ( tpbvc[i] * te_new[i]
+                        + tvnewc[i] * tvnewc[i] * tbvc[i] * tp_new[i] ) / rho0 ;
+
+                    if ( ssc <= 0.1111111e-36 ) {
+                       ssc = 0.3333333e-18 ;
+                    } else {
+                       ssc = sqrt(ssc) ;
+                    }
+
+                    q_tilde = (ssc*tql_old[i] + tqq_old[i]) ;
+                 }
+
+                 te_new[i] = te_new[i] - ( 7.0*(tp_old[i] + tq_old[i])
+                                        - 8.0*(tpHalfStep[i] + tq_new[i])
+                                        + (tp_new[i] + q_tilde)) * tdelvc[i] / 6.0 ;
+
+                 if ( fabs(te_new[i]) < e_cut ) {
+                    te_new[i] = 0.0  ;
+                 }
+                 if ( te_new[i]  < emin ) {
+                    te_new[i] = emin ;
+                 }
+               } );
+
+               forall<omp_for_nowait_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr tq_new = q_new;
+                 Real_ptr tdelvc = delvc;
+                 Real_ptr te_new = e_new;
+                 Real_ptr tp_new = p_new;
+                 Real_ptr tvnewc = vnewc;
+                 Real_ptr tbvc = bvc;
+                 Real_ptr tpbvc = pbvc;
+                 Real_ptr tql_old = ql_old;
+                 Real_ptr tqq_old = qq_old;
+                 if ( tdelvc[i] <= 0.0 ) {
+                    Real_type ssc = ( tpbvc[i] * te_new[i]
+                            + tvnewc[i] * tvnewc[i] * tbvc[i] * tp_new[i] ) / rho0 ;
+
+                    if ( ssc <= 0.1111111e-36 ) {
+                       ssc = 0.3333333e-18 ;
+                    } else {
+                       ssc = sqrt(ssc) ;
+                    }
+
+                    tq_new[i] = (ssc*tql_old[i] + tqq_old[i]) ;
+
+                    if (fabs(tq_new[i]) < q_cut) tq_new[i] = 0.0 ;
+                 }
+               } );
+              } // omp parallel
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_ENERGY_CALC_ALT)
+          case ENERGY_CALC_ALT : {  // --> from subset "A"
+
+//
+// NOTE: This is a slight variation on the OpenMP execution pattern
+//       in the kernel above.
+//
+
+            loopInit(iloop, stat);
+
+            Real_ptr e_new = loop_data.array_1D_Real[0];
+            Real_ptr e_old = loop_data.array_1D_Real[1];
+            Real_ptr delvc = loop_data.array_1D_Real[2];
+            Real_ptr p_new = loop_data.array_1D_Real[3];
+            Real_ptr p_old = loop_data.array_1D_Real[4];
+            Real_ptr q_new = loop_data.array_1D_Real[5];
+            Real_ptr q_old = loop_data.array_1D_Real[6];
+            Real_ptr work = loop_data.array_1D_Real[7];
+            Real_ptr compHalfStep = loop_data.array_1D_Real[8];
+            Real_ptr pHalfStep = loop_data.array_1D_Real[9];
+            Real_ptr bvc = loop_data.array_1D_Real[10];
+            Real_ptr pbvc = loop_data.array_1D_Real[11];
+            Real_ptr ql_old = loop_data.array_1D_Real[12];
+            Real_ptr qq_old = loop_data.array_1D_Real[13];
+            Real_ptr vnewc = loop_data.array_1D_Real[14];
+
+            const Real_type rho0 = loop_data.scalar_Real[0];
+            const Real_type e_cut = loop_data.scalar_Real[1];
+            const Real_type emin = loop_data.scalar_Real[2];
+            const Real_type q_cut = loop_data.scalar_Real[3];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               forall<omp_parallel_for_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr te_new = e_new;
+                 Real_ptr te_old = e_old;
+                 Real_ptr tdelvc = delvc;
+                 Real_ptr tp_old = p_old;
+                 Real_ptr tq_old = q_old;
+                 Real_ptr twork = work;
+                 te_new[i] = te_old[i] - 0.5 * tdelvc[i] *
+                            (tp_old[i] + tq_old[i]) + 0.5 * twork[i];
+               } );
+
+               forall<omp_parallel_for_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr tq_new = q_new;
+                 Real_ptr tdelvc = delvc;
+                 Real_ptr tcompHalfStep = compHalfStep;
+                 Real_ptr tpHalfStep = pHalfStep;
+                 Real_ptr te_new = e_new;
+                 Real_ptr tbvc = bvc;
+                 Real_ptr tpbvc = pbvc;
+                 Real_ptr tql_old = ql_old;
+                 Real_ptr tqq_old = qq_old;
+                 if ( tdelvc[i] > 0.0 ) {
+                    tq_new[i] = 0.0 ;
+                 }
+                 else {
+                    Real_type vhalf = 1.0 / (1.0 + tcompHalfStep[i]) ;
+                    Real_type ssc = ( tpbvc[i] * te_new[i]
+                       + vhalf * vhalf * tbvc[i] * tpHalfStep[i] ) / rho0 ;
+
+                    if ( ssc <= 0.1111111e-36 ) {
+                       ssc = 0.3333333e-18 ;
+                    } else {
+                       ssc = sqrt(ssc) ;
+                    }
+
+                    tq_new[i] = (ssc*tql_old[i] + tqq_old[i]) ;
+                 }
+               } );
+
+               forall<omp_parallel_for_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr te_new = e_new;
+                 Real_ptr tdelvc = delvc;
+                 Real_ptr tpHalfStep = pHalfStep;
+                 Real_ptr tp_old = p_old;
+                 Real_ptr tq_old = q_old;
+                 Real_ptr tq_new = q_new;
+                 te_new[i] = te_new[i] + 0.5 * tdelvc[i]
+                    * ( 3.0*(tp_old[i] + tq_old[i])
+                         - 4.0*(tpHalfStep[i] + tq_new[i])) ;
+               } );
+
+               forall<omp_parallel_for_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr te_new = e_new;
+                 Real_ptr twork = work;
+                 te_new[i] += 0.5 * twork[i];
+
+                 if ( fabs(te_new[i]) < e_cut ) { te_new[i] = 0.0  ; }
+
+                 if ( te_new[i]  < emin ) { te_new[i] = emin ; }
+               } );
+
+               forall<omp_parallel_for_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr tq_new = q_new;
+                 Real_ptr tdelvc = delvc;
+                 Real_ptr te_new = e_new;
+                 Real_ptr tp_new = p_new;
+                 Real_ptr tvnewc = vnewc;
+                 Real_ptr tbvc = bvc;
+                 Real_ptr tpbvc = pbvc;
+                 Real_ptr tql_old = ql_old;
+                 Real_ptr tqq_old = qq_old;
+                 Real_ptr tp_old = p_old;
+                 Real_ptr tq_old = q_old;
+                 Real_ptr tpHalfStep = pHalfStep;
+
+                 Real_type q_tilde ;
+
+                 if (tdelvc[i] > 0.0) {
+                    q_tilde = 0. ;
+                 }
+                 else {
+                    Real_type ssc = ( tpbvc[i] * te_new[i]
+                        + tvnewc[i] * tvnewc[i] * tbvc[i] * tp_new[i] ) / rho0 ;
+
+                    if ( ssc <= 0.1111111e-36 ) {
+                       ssc = 0.3333333e-18 ;
+                    } else {
+                       ssc = sqrt(ssc) ;
+                    }
+
+                    q_tilde = (ssc*tql_old[i] + tqq_old[i]) ;
+                 }
+
+                 te_new[i] = te_new[i] - ( 7.0*(tp_old[i] + tq_old[i])
+                                        - 8.0*(tpHalfStep[i] + tq_new[i])
+                                        + (tp_new[i] + q_tilde)) * tdelvc[i] / 6.0 ;
+
+                 if ( fabs(te_new[i]) < e_cut ) {
+                    te_new[i] = 0.0  ;
+                 }
+                 if ( te_new[i]  < emin ) {
+                    te_new[i] = emin ;
+                 }
+               } );
+
+               forall<omp_parallel_for_exec>(0, len,
+               [&] (Index_type i) {
+                 Real_ptr tq_new = q_new;
+                 Real_ptr tdelvc = delvc;
+                 Real_ptr te_new = e_new;
+                 Real_ptr tp_new = p_new;
+                 Real_ptr tvnewc = vnewc;
+                 Real_ptr tbvc = bvc;
+                 Real_ptr tpbvc = pbvc;
+                 Real_ptr tql_old = ql_old;
+                 Real_ptr tqq_old = qq_old;
+                 if ( tdelvc[i] <= 0.0 ) {
+                    Real_type ssc = ( tpbvc[i] * te_new[i]
+                            + tvnewc[i] * tvnewc[i] * tbvc[i] * tp_new[i] ) / rho0 ;
+
+                    if ( ssc <= 0.1111111e-36 ) {
+                       ssc = 0.3333333e-18 ;
+                    } else {
+                       ssc = sqrt(ssc) ;
+                    }
+
+                    tq_new[i] = (ssc*tql_old[i] + tqq_old[i]) ;
+
+                    if (fabs(tq_new[i]) < q_cut) tq_new[i] = 0.0 ;
+                 }
+               } );
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_VOL3D_CALC)
+          case VOL3D_CALC : {   // --> from subset "A"
+
+            loopInit(iloop, stat);
+
+            Real_ptr x = loop_data.array_1D_Real[0];
+            Real_ptr y = loop_data.array_1D_Real[1];
+            Real_ptr z = loop_data.array_1D_Real[2];
+            Real_ptr vol = loop_data.array_1D_Real[3];
+
+            ADomain domain(ilength, /* ndims = */ 3);
+
+            UnalignedReal_ptr x0,x1,x2,x3,x4,x5,x6,x7 ;
+            UnalignedReal_ptr y0,y1,y2,y3,y4,y5,y6,y7 ;
+            UnalignedReal_ptr z0,z1,z2,z3,z4,z5,z6,z7 ;
+
+            NDPTRSET(x,x0,x1,x2,x3,x4,x5,x6,x7) ;
+            NDPTRSET(y,y0,y1,y2,y3,y4,y5,y6,y7) ;
+            NDPTRSET(z,z0,z1,z2,z3,z4,z5,z6,z7) ;
+
+            const Real_type vnormq = 0.083333333333333333; /* vnormq = 1/12 */
+
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               forall<omp_parallel_for_exec>(domain.fpz, domain.lpz + 1,
+               [&] (Index_type i) {
+                  Real_ptr tvol = vol;
+
+                  Real_type x71 = x7[i] - x1[i] ;
+                  Real_type x72 = x7[i] - x2[i] ;
+                  Real_type x74 = x7[i] - x4[i] ;
+                  Real_type x30 = x3[i] - x0[i] ;
+                  Real_type x50 = x5[i] - x0[i] ;
+                  Real_type x60 = x6[i] - x0[i] ;
+
+                  Real_type y71 = y7[i] - y1[i] ;
+                  Real_type y72 = y7[i] - y2[i] ;
+                  Real_type y74 = y7[i] - y4[i] ;
+                  Real_type y30 = y3[i] - y0[i] ;
+                  Real_type y50 = y5[i] - y0[i] ;
+                  Real_type y60 = y6[i] - y0[i] ;
+
+                  Real_type z71 = z7[i] - z1[i] ;
+                  Real_type z72 = z7[i] - z2[i] ;
+                  Real_type z74 = z7[i] - z4[i] ;
+                  Real_type z30 = z3[i] - z0[i] ;
+                  Real_type z50 = z5[i] - z0[i] ;
+                  Real_type z60 = z6[i] - z0[i] ;
+
+                  Real_type xps = x71 + x60 ;
+                  Real_type yps = y71 + y60 ;
+                  Real_type zps = z71 + z60 ;
+
+                  Real_type cyz = y72 * z30 - z72 * y30 ;
+                  Real_type czx = z72 * x30 - x72 * z30 ;
+                  Real_type cxy = x72 * y30 - y72 * x30 ;
+                  tvol[i] = xps * cyz + yps * czx + zps * cxy ;
+
+                  xps = x72 + x50 ;
+                  yps = y72 + y50 ;
+                  zps = z72 + z50 ;
+
+                  cyz = y74 * z60 - z74 * y60 ;
+                  czx = z74 * x60 - x74 * z60 ;
+                  cxy = x74 * y60 - y74 * x60 ;
+                  tvol[i] += xps * cyz + yps * czx + zps * cxy ;
+
+                  xps = x74 + x30 ;
+                  yps = y74 + y30 ;
+                  zps = z74 + z30 ;
+
+                  cyz = y71 * z50 - z71 * y50 ;
+                  czx = z71 * x50 - x71 * z50 ;
+                  cxy = x71 * y50 - y71 * x50 ;
+                  tvol[i] += xps * cyz + yps * czx + zps * cxy ;
+
+                  tvol[i] *= vnormq ;
+
+               } );
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_DEL_DOT_VEC_2D)
+          case DEL_DOT_VEC_2D : {   // --> from subset "A"
+
+            loopInit(iloop, stat);
+
+            Real_ptr x = loop_data.array_1D_Real[0];
+            Real_ptr y = loop_data.array_1D_Real[1];
+            Real_ptr xdot = loop_data.array_1D_Real[2];
+            Real_ptr ydot = loop_data.array_1D_Real[3];
+            Real_ptr div = loop_data.array_1D_Real[4];
+
+            ADomain domain(ilength, /* ndims = */ 2);
+
+            UnalignedReal_ptr x1,x2,x3,x4 ;
+            UnalignedReal_ptr y1,y2,y3,y4 ;
+            UnalignedReal_ptr fx1,fx2,fx3,fx4 ;
+            UnalignedReal_ptr fy1,fy2,fy3,fy4 ;
+
+            NDSET2D(x,x1,x2,x3,x4) ;
+            NDSET2D(y,y1,y2,y3,y4) ;
+            NDSET2D(xdot,fx1,fx2,fx3,fx4) ;
+            NDSET2D(ydot,fy1,fy2,fy3,fy4) ;
+
+            const Real_type ptiny = 1.0e-20;
+            const Real_type half  = 0.5;
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               forall<omp_parallel_for_exec>(0, domain.n_real_zones,
+               [&] (Index_type ii) {
+                  Real_ptr tdiv = div;
+
+                  Index_type i  = domain.real_zones[ii] ;
+
+                  Real_type xi  = half * ( x1[i]  + x2[i]  - x3[i]  - x4[i]  ) ;
+                  Real_type xj  = half * ( x2[i]  + x3[i]  - x4[i]  - x1[i]  ) ;
+
+                  Real_type yi  = half * ( y1[i]  + y2[i]  - y3[i]  - y4[i]  ) ;
+                  Real_type yj  = half * ( y2[i]  + y3[i]  - y4[i]  - y1[i]  ) ;
+
+                  Real_type fxi = half * ( fx1[i] + fx2[i] - fx3[i] - fx4[i] ) ;
+                  Real_type fxj = half * ( fx2[i] + fx3[i] - fx4[i] - fx1[i] ) ;
+
+                  Real_type fyi = half * ( fy1[i] + fy2[i] - fy3[i] - fy4[i] ) ;
+                  Real_type fyj = half * ( fy2[i] + fy3[i] - fy4[i] - fy1[i] ) ;
+
+                  Real_type rarea  = 1.0 / ( xi * yj - xj * yi + ptiny ) ;
+
+                  Real_type dfxdx  = rarea * ( fxi * yj - fxj * yi ) ;
+
+                  Real_type dfydy  = rarea * ( fyj * xi - fyi * xj ) ;
+
+                  Real_type affine = ( fy1[i] + fy2[i] + fy3[i] + fy4[i] ) /
+                                     ( y1[i]  + y2[i]  + y3[i]  + y4[i]  ) ;
+
+                  div[i] = dfxdx + dfydy + affine ;
+
+               } );
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_COUPLE)
+          case COUPLE : {   // --> from subset "A"
+
+            loopInit(iloop, stat);
+
+            Complex_ptr t0 = loop_data.array_1D_Complex[0];
+            Complex_ptr t1 = loop_data.array_1D_Complex[1];
+            Complex_ptr t2 = loop_data.array_1D_Complex[2];
+            Complex_ptr denac = loop_data.array_1D_Complex[3];
+            Complex_ptr denlw = loop_data.array_1D_Complex[4];
+
+
+            ADomain domain(ilength, /* ndims = */ 3);
+
+            Index_type imin = domain.imin;
+            Index_type imax = domain.imax;
+            Index_type jmin = domain.jmin;
+            Index_type jmax = domain.jmax;
+            Index_type kmin = domain.kmin;
+            Index_type kmax = domain.kmax;
+
+            const Real_type clight=3.e+10;
+            const Real_type csound=3.09e+7;
+            const Real_type omega0= 0.9;
+            const Real_type omegar= 0.9;
+            const Real_type dt= 0.208;
+            const Real_type c10 = 0.25 * (clight / csound);
+            const Real_type fratio = sqrt(omegar / omega0);
+            const Real_type r_fratio = 1.0/fratio;
+            const Real_type c20 = 0.25 * (clight / csound) * r_fratio;
+            const Complex_type ireal(0.0, 1.0);
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               forall<omp_parallel_for_exec>(kmin, kmax,
+               [&] (Index_type k) {
+
+                  for (Index_type j = jmin; j < jmax; j++) {
+
+                     Index_type it0=    ((k)*(jmax+1) + (j))*(imax+1) ;
+                     Index_type idenac= ((k)*(jmax+2) + (j))*(imax+2) ;
+
+                     for (Index_type i = imin; i < imax; i++) {
+
+                        Complex_ptr tt0 = t0;
+                        Complex_ptr tt1 = t1;
+                        Complex_ptr tt2 = t2;
+                        Complex_ptr tdenac = denac;
+                        Complex_ptr tdenlw = denlw;
+
+                        Complex_type c1 = c10 * tdenac[idenac+i];
+                        Complex_type c2 = c20 * tdenlw[it0+i];
+
+                        /* promote to doubles to avoid possible divide by zero
+                           errors later on. */
+                        Real_type c1re = real(c1);  Real_type c1im = imag(c1);
+                        Real_type c2re = real(c2);  Real_type c2im = imag(c2);
+
+                        /* compute lamda = sqrt(|c1|^2 + |c2|^2) using doubles
+                           to avoid underflow. */
+                        Real_type zlam = c1re*c1re + c1im*c1im +
+                                         c2re*c2re + c2im*c2im + 1.0e-34;
+                        zlam = sqrt(zlam);
+                        Real_type snlamt = sin(zlam * dt * 0.5);
+                        Real_type cslamt = cos(zlam * dt * 0.5);
+
+                        Complex_type a0t = tt0[it0+i];
+                        Complex_type a1t = tt1[it0+i];
+                        Complex_type a2t = tt2[it0+i] * fratio;
+
+                        Real_type r_zlam= 1.0/zlam;
+                        c1 *= r_zlam;
+                        c2 *= r_zlam;
+                        Real_type zac1 = zabs2(c1);
+                        Real_type zac2 = zabs2(c2);
+
+                        /* compute new A0 */
+                        Complex_type z3 = ( c1 * a1t + c2 * a2t ) * snlamt ;
+                        tt0[it0+i] = a0t * cslamt -  ireal * z3;
+
+                        /* compute new A1  */
+                        Real_type r = zac1 * cslamt + zac2;
+                        Complex_type z5 = c2 * a2t;
+                        Complex_type z4 = conj(c1) * z5 * (cslamt-1);
+                        z3 = conj(c1) * a0t * snlamt;
+                        tt1[it0+i] = a1t * r + z4 - ireal * z3;
+
+
+                        /* compute new A2  */
+                        r = zac1 + zac2 * cslamt;
+                        z5 = c1 * a1t;
+                        z4 = conj(c2) * z5 * (cslamt-1);
+                        z3 = conj(c2) * a0t * snlamt;
+                        tt2[it0+i] = ( a2t * r + z4 - ireal * z3 ) * r_fratio;
+
+                     }   // i loop
+
+                  }  // j loop
+
+               } );  // k loop
+
+            } // isamp loop
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_FIR)
+          case FIR : {   // --> from subset "A"
+
+            loopInit(iloop, stat);
+
+            Real_ptr out = loop_data.array_1D_Real[0];
+            Real_ptr in = loop_data.array_1D_Real[1];
+
+            const Index_type coefflen = 16;
+            Real_type coeff[coefflen] = { 3.0, -1.0, -1.0, -1.0,
+                                          -1.0, 3.0, -1.0, -1.0,
+                                          -1.0, -1.0, 3.0, -1.0,
+                                          -1.0, -1.0, -1.0, 3.0 };
+            const Index_type len_minus_coeff = len - coefflen;
+
+            Index_type val = 0;
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               forall<omp_parallel_for_exec>(0, len_minus_coeff,
+               [&] (Index_type i) {
+                  Real_ptr tout = out;
+                  Real_ptr tin = in;
+                  Real_ptr tcoeff = coeff;
+
+                  Real_type sum = 0.0;
+                  for (Index_type j = 0; j < coefflen; ++j ) {
+                     sum += tcoeff[j]*tin[i+j];
+                  }
+                  tout[i] = sum;
+
+               } );
+
+               val = isamp;
+
+            }
+            TIMER_STOP(ltimer);
+
+            //
+            // RDH added this. Without it compiler may optimize out outer 
+            // sampling loop since each sample pass results in identical output.
+            //
+            loop_data.scalar_Real[0] =
+               (val + 0.00123) / (val - 0.00123);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_IF_QUAD)
+          case IF_QUAD : {  // --> from subset "B"
+
+            loopInit(iloop, stat);
+
+            Real_ptr a = loop_data.array_1D_Real[0];
+            Real_ptr b = loop_data.array_1D_Real[1];
+            Real_ptr c = loop_data.array_1D_Real[2];
+            Real_ptr x1 = loop_data.array_1D_Real[3];
+            Real_ptr x2 = loop_data.array_1D_Real[4];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               forall<omp_parallel_for_exec>(0, len,
+               [&] (Index_type i) {
+                  Real_ptr ta = a;
+                  Real_ptr tb = b;
+                  Real_ptr tc = c;
+                  Real_ptr tx1 = x1;
+                  Real_ptr tx2 = x2;
+
+                  Real_type s = tb[i]*tb[i] - 4.0*ta[i]*tc[i];
+                  if ( s >= 0 ) {
+                     s = sqrt(s);
+                     tx2[i] = (-tb[i]+s)/(2.0*ta[i]);
+                     tx1[i] = (-tb[i]-s)/(2.0*ta[i]);
+                  } else {
+                     tx2[i] = 0.0;
+                     tx1[i] = 0.0;
+                  }
+               } );
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_TRAP_INT)
+          case TRAP_INT : {  // --> from subset "B"
+
+            stat.loop_is_run = false;
+
+//
+//  NOTE: There is no change to this loop for type fix.
+//
+            break;
+          }
+#endif
+
+#if defined(COMPILE_PIC_2D)
+          case PIC_2D : {  // --> from subset "C"
+
+            loopInit(iloop, stat);
+
+            //
+            // RDH modified kernel to fix zero-based indexing error.
+            //
+
+            Real_ptr* p = loop_data.array_2D_Nx25_Real[0];
+            Real_ptr* b = loop_data.array_2D_Nx25_Real[1];
+            Real_ptr* c = loop_data.array_2D_Nx25_Real[2];
+
+            Real_ptr y = loop_data.array_1D_Real[0];
+            Real_ptr z = loop_data.array_1D_Real[1];
+
+            Index_type* e = loop_data.array_1D_Indx[0];
+            Index_type* f = loop_data.array_1D_Indx[1];
+
+            Real_ptr* h = loop_data.array_2D_64x64_Real[0];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+               forall<omp_parallel_for_exec>(0, len,
+               [&] (Index_type ip) {
+                  Real_ptr* tp = p;
+                  Real_ptr* tb = b;
+                  Real_ptr* tc = c;
+                  Real_ptr ty = y;
+                  Real_ptr tz = z;
+                  Real_ptr* th = h;
+                  Index_type i1, j1, i2, j2;
+                  i1 = (Index_type) tp[ip][0];
+                  j1 = (Index_type) tp[ip][1];
+                  i1 &= 64-1;
+                  j1 &= 64-1;
+                  tp[ip][2] += tb[j1][i1];
+                  tp[ip][3] += tc[j1][i1];
+                  tp[ip][0] += tp[ip][2];
+                  tp[ip][1] += tp[ip][3];
+                  i2 = (Index_type) tp[ip][0];
+                  j2 = (Index_type) tp[ip][1];
+                  i2 = ( i2 & 64-1 ) ;
+                  j2 = ( j2 & 64-1 ) ;
+                  tp[ip][0] += ty[i2+32];
+                  tp[ip][1] += tz[j2+32];
+                  i2 += e[i2+32];
+                  j2 += f[j2+32];
+                  #pragma omp atomic
+                  th[j2][i2] += 1.0;
+               } );
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+ 
+
+          default: {
+//          std::cout << "\n Unknown loop id = " << iloop << std::endl;
+          }
+
+         } // switch on loop id
+
+         copyTimer(stat, ilength, ltimer);
+
+      }  // if loop with id should be run 
+
+   }  // for loop over loops
+
+#endif  // if COMPILE_LAMBDA_VARIANTS && COMPILE_OMP_VARIANTS
+
+}
