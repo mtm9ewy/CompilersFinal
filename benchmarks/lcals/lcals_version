@@ -1,0 +1,196 @@
+#!/usr/bin/perl
+
+$hfile = 'lcalsversioninfo.txt';
+
+$date = `date +%m/%d/%y`;
+chop($date);
+
+$time = `date +%H:%M:%S`;
+chop($time);
+
+%gaa_info = ( ) ;               # associate array of info such as the CC
+                                # compiler used, the flags used, etc.
+
+for ($i=1; $i<= $#ARGV; $i++) {
+
+   # print "DEBUG 100 arg $i = '$ARGV[$i]'\n";
+
+   @tstr_toks = { };                    # initialze tokens to empty
+
+                                        # split string into tokens
+   @tstr_toks = split /[ \t\n]+/, $ARGV[$i], 999;
+
+   $token1 = $tstr_toks[0];
+   $token2 = $tstr_toks[1];
+
+    if      ($token2 eq "info") {
+
+      $t2str = "";                              # catenate all remainging tokens
+                                                # together to create one info line
+      for ($j=2; $j<=$#tstr_toks; $j++) {
+
+         $t2str .= "$tstr_toks[$j] ";
+      }
+
+      $gaa_info{$token1} = $t2str;
+
+
+      next;                                     # we are done with this line
+
+    } else {
+      ;
+    }
+
+}       # end loop over ARGV
+
+
+# ------------------------------------------------------------------------------
+# -  Check num of args
+# ------------------------------------------------------------------------------
+if ($#ARGV < 0) {
+
+  printf "$0:ERROR ERROR ERROR\n\tUsage: lcals_version opt_string ";
+  exit;
+}
+
+# ------------------------------------------------------------------------------
+# - get the compiler used for build
+# ------------------------------------------------------------------------------
+$comp = $ARGV[0];
+
+# ------------------------------------------------------------------------------
+# - All systmes should understand the -s flas, so do that one first
+# ------------------------------------------------------------------------------
+$os = `uname -s`;
+chop($os);
+
+# ------------------------------------------------------------------------------
+# - Not all systems understand the -p command
+# ------------------------------------------------------------------------------
+if ( ($os =~ /linux/i) || ($os =~ /aix/i) ) {
+  $proc = "unknown ";
+}
+else {
+  $proc = `uname -p`;
+  chop($proc);
+}
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+$rel = `uname -r`;
+chop($rel);
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+$ver = `uname -v`;
+chop($ver);
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+$machine = `uname -n`;
+chop($name);
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+$person = (getpwuid($<))[0];
+
+if (-e $hfile) {
+   system ("mv $hfile $hfile~");
+}
+
+# ------------------------------------------------------------------------------
+# - catenate uname info the way we want it
+# - remove any 'unknown ' strings
+# ------------------------------------------------------------------------------
+$ver_os = "\"$proc $os $rel $ver\"";
+$ver_os =~ s/unknown //g;
+
+open(HFILE,"> $hfile");
+
+printf HFILE ("\n");
+printf HFILE ("\/********************************************************************\n");
+printf HFILE ("* LCALS compilation information created by 'lcals_vesion'\n"); 
+printf HFILE ("* script during make process....\n");
+printf HFILE ("********************************************************************\/\n");
+printf HFILE ("\n");
+
+print HFILE ("#define VER_MACHINE \"$machine\"\n");
+print HFILE ("#define VER_DATE \"$date\"\n");
+print HFILE ("#define VER_TIME \"$time\"\n");
+print HFILE ("#define VER_OS $ver_os\n");
+print HFILE ("#define VER_COMPILER \"$comp\"\n");
+print HFILE ("#define VER_PERSON \"$person\"\n");
+
+# ------------------------------------------------------------------------------
+# - Create static characater arrays for INFO values, such as compiler, link,
+# - flags, etc.
+# ------------------------------------------------------------------------------
+
+   printf HFILE ("\n");
+
+   $max_info = 0 ;
+   $num_info = 0 ;
+                                        # --------------------------------------
+                                        # count max num of items in hash array
+                                        # --------------------------------------
+
+   foreach $info (sort (keys %gaa_info) ) { $max_info++; }
+
+   printf HFILE ("%s %d\n\n","#define LCALS_VER_INFO_MAX", $max_info );
+
+   if ($max_info < 1) { goto BYPASS_INFO; }
+
+                                        # --------------------------------------
+                                        # write out array of info names
+                                        # count how many while doing so
+                                        # --------------------------------------
+
+   printf HFILE ("static char *lcals_ver_info_names[LCALS_VER_INFO_MAX] = {\n");
+
+   $need_comma = "false";
+
+   foreach $info (sort (keys %gaa_info) ) {
+
+      if ($need_comma eq "true") { printf HFILE (",\n") }
+      printf HFILE ("   \"%s\"",$info );
+      $need_comma = "true" ;
+      $num_info++;
+
+   }
+
+   printf HFILE ("\n};\n\n");
+                                        # --------------------------------------
+                                        # write out array of info values
+                                        # same logic as above
+                                        # --------------------------------------
+
+   printf HFILE ("%s %d\n\n","#define LCALS_VER_INFO_NUM", $num_info );
+
+   printf HFILE ("static char *lcals_ver_info_values[LCALS_VER_INFO_NUM] = {\n");
+
+   $need_comma = "false";
+
+   foreach $info ( sort (keys %gaa_info) ) {
+
+      if ($need_comma eq "true") { printf HFILE (",\n") }
+      printf HFILE ("   \"%s\"",$gaa_info{$info} ) ;
+      $need_comma = "true" ;
+
+   }
+
+   printf HFILE ("\n};\n\n");
+
+   BYPASS_INFO:
+
+# ------------------------------------------------------------------------------
+# Close the header file
+# ------------------------------------------------------------------------------
+
+printf HFILE ("\n");
+
+
+close(HFILE);
+
+# ------------------------------------------------------------------------------
+# - end of file
+# ------------------------------------------------------------------------------

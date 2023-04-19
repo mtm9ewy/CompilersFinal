@@ -1,0 +1,932 @@
+//
+// See README-LCALS_license.txt for access and distribution restrictions
+//
+
+//
+// Source file containing LCALS OpenMP raw loops.
+// 
+// NOTE: These loops are a subset of other loops.  Which subset is indicated
+//       at top of each loop case.
+//
+
+#include "LCALSSuite.hxx"
+#include "SubsetDataA.hxx"
+#include "SubsetDataB.hxx"
+
+#include<cstdlib>
+#include<iostream>
+#include<cmath>
+
+
+void runOMPRawLoops( std::vector<LoopStat>& loop_stats,
+                     bool run_loop[],
+                     LoopLength ilength )
+{
+   LoopSuiteRunInfo& loop_suite_run_info = getLoopSuiteRunInfo();
+   LoopData& loop_data = getLoopData();
+
+#if defined(COMPILE_RAW_VARIANTS) && defined(COMPILE_OMP_VARIANTS)
+
+   for (unsigned iloop = 0; iloop < loop_suite_run_info.num_loops; ++iloop) {
+
+      if ( run_loop[iloop] ) {
+
+         LoopStat& stat = loop_stats[iloop];
+         Index_type len = stat.loop_length[ilength];
+         int num_samples = stat.samples_per_pass[ilength];
+#if defined(LCALS_VERIFY_CHECKSUM_ABBREVIATED)
+         num_samples = num_checksum_samples;
+#endif
+
+         LoopTimer ltimer;
+
+         switch ( iloop ) {
+
+#if defined(COMPILE_PRESSURE_CALC)
+          case PRESSURE_CALC : {  // --> from subset "A"
+
+            loopInit(iloop, stat);
+
+            Real_ptr compression = loop_data.array_1D_Real[0];  
+            Real_ptr bvc = loop_data.array_1D_Real[1];  
+            Real_ptr p_new = loop_data.array_1D_Real[2];  
+            Real_ptr e_old = loop_data.array_1D_Real[3];  
+            Real_ptr vnewc = loop_data.array_1D_Real[4];  
+
+            const Real_type cls = loop_data.scalar_Real[0];
+            const Real_type p_cut = loop_data.scalar_Real[1];
+            const Real_type pmin = loop_data.scalar_Real[2];
+            const Real_type eosvmax = loop_data.scalar_Real[3];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+             #pragma omp parallel
+              {
+               #pragma omp for nowait
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 bvc[i] = cls * (compression[i] + 1.0);
+               }
+
+               #pragma omp for nowait
+               for (Index_type i=0 ; i<len ; i++ ) {
+                  p_new[i] = bvc[i] * e_old[i] ;
+
+                  if ( fabs(p_new[i]) <  p_cut ) p_new[i] = 0.0 ;
+
+                  if ( vnewc[i] >= eosvmax ) p_new[i] = 0.0 ;
+
+                  if ( p_new[i]  <  pmin ) p_new[i]   = pmin ;
+               }
+              }  // omp parallel
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_PRESSURE_CALC_ALT)
+          case PRESSURE_CALC_ALT : {  // --> from subset "A"
+
+//
+// NOTE: This is a slight variation on the OpenMP execution pattern
+//       in the kernel above.
+//
+
+            loopInit(iloop, stat);
+
+            Real_ptr compression = loop_data.array_1D_Real[0];  
+            Real_ptr bvc = loop_data.array_1D_Real[1];  
+            Real_ptr p_new = loop_data.array_1D_Real[2];  
+            Real_ptr e_old = loop_data.array_1D_Real[3];  
+            Real_ptr vnewc = loop_data.array_1D_Real[4];  
+
+            const Real_type cls = loop_data.scalar_Real[0];
+            const Real_type p_cut = loop_data.scalar_Real[1];
+            const Real_type pmin = loop_data.scalar_Real[2];
+            const Real_type eosvmax = loop_data.scalar_Real[3];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               #pragma omp parallel for
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 bvc[i] = cls * (compression[i] + 1.0);
+               }
+
+               #pragma omp parallel for
+               for (Index_type i=0 ; i<len ; i++ ) {
+                  p_new[i] = bvc[i] * e_old[i] ;
+
+                  if ( fabs(p_new[i]) <  p_cut ) p_new[i] = 0.0 ;
+
+                  if ( vnewc[i] >= eosvmax ) p_new[i] = 0.0 ;
+
+                  if ( p_new[i]  <  pmin ) p_new[i]   = pmin ;
+               }
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_ENERGY_CALC)
+          case ENERGY_CALC : {   // --> from subset "A"
+
+            loopInit(iloop, stat);
+
+            Real_ptr e_new = loop_data.array_1D_Real[0];
+            Real_ptr e_old = loop_data.array_1D_Real[1];
+            Real_ptr delvc = loop_data.array_1D_Real[2];
+            Real_ptr p_new = loop_data.array_1D_Real[3];
+            Real_ptr p_old = loop_data.array_1D_Real[4];
+            Real_ptr q_new = loop_data.array_1D_Real[5];
+            Real_ptr q_old = loop_data.array_1D_Real[6];
+            Real_ptr work = loop_data.array_1D_Real[7];
+            Real_ptr compHalfStep = loop_data.array_1D_Real[8];
+            Real_ptr pHalfStep = loop_data.array_1D_Real[9];
+            Real_ptr bvc = loop_data.array_1D_Real[10];
+            Real_ptr pbvc = loop_data.array_1D_Real[11];
+            Real_ptr ql_old = loop_data.array_1D_Real[12];
+            Real_ptr qq_old = loop_data.array_1D_Real[13];
+            Real_ptr vnewc = loop_data.array_1D_Real[14];
+
+            const Real_type rho0 = loop_data.scalar_Real[0];
+            const Real_type e_cut = loop_data.scalar_Real[1];
+            const Real_type emin = loop_data.scalar_Real[2];
+            const Real_type q_cut = loop_data.scalar_Real[3];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+              #pragma omp parallel
+              {
+               #pragma omp for nowait
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 e_new[i] = e_old[i] - 0.5 * delvc[i] * 
+                            (p_old[i] + q_old[i]) + 0.5 * work[i];
+               }
+
+               #pragma omp for nowait
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 if ( delvc[i] > 0.0 ) {
+                    q_new[i] = 0.0 ;
+                 }
+                 else {
+                    Real_type vhalf = 1.0 / (1.0 + compHalfStep[i]) ;
+                    Real_type ssc = ( pbvc[i] * e_new[i]
+                       + vhalf * vhalf * bvc[i] * pHalfStep[i] ) / rho0 ;
+
+                    if ( ssc <= 0.1111111e-36 ) {
+                       ssc = 0.3333333e-18 ;
+                    } else {
+                       ssc = sqrt(ssc) ;
+                    }
+
+                    q_new[i] = (ssc*ql_old[i] + qq_old[i]) ;
+                 }
+               }
+
+               #pragma omp for nowait
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 e_new[i] = e_new[i] + 0.5 * delvc[i]
+                    * ( 3.0*(p_old[i] + q_old[i])
+                         - 4.0*(pHalfStep[i] + q_new[i])) ;
+               }
+
+               #pragma omp for nowait
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 e_new[i] += 0.5 * work[i];
+
+                 if ( fabs(e_new[i]) < e_cut ) { e_new[i] = 0.0  ; }
+
+                 if ( e_new[i]  < emin ) { e_new[i] = emin ; }
+               }
+
+               #pragma omp for nowait
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 Real_type q_tilde ;
+
+                 if (delvc[i] > 0.0) { 
+                    q_tilde = 0. ; 
+                 }
+                 else {
+                    Real_type ssc = ( pbvc[i] * e_new[i]
+                        + vnewc[i] * vnewc[i] * bvc[i] * p_new[i] ) / rho0 ;
+
+                    if ( ssc <= 0.1111111e-36 ) {
+                       ssc = 0.3333333e-18 ;
+                    } else {
+                       ssc = sqrt(ssc) ;
+                    }
+
+                    q_tilde = (ssc*ql_old[i] + qq_old[i]) ;
+                 }
+
+                 e_new[i] = e_new[i] - ( 7.0*(p_old[i] + q_old[i])
+                                        - 8.0*(pHalfStep[i] + q_new[i])
+                                        + (p_new[i] + q_tilde)) * delvc[i] / 6.0 ;
+
+                 if ( fabs(e_new[i]) < e_cut ) {
+                    e_new[i] = 0.0  ;
+                 }
+                 if ( e_new[i]  < emin ) {
+                    e_new[i] = emin ;
+                 }
+               }
+
+               #pragma omp for nowait
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 if ( delvc[i] <= 0.0 ) {
+                    Real_type ssc = ( pbvc[i] * e_new[i]
+                            + vnewc[i] * vnewc[i] * bvc[i] * p_new[i] ) / rho0 ;
+
+                    if ( ssc <= 0.1111111e-36 ) {
+                       ssc = 0.3333333e-18 ;
+                    } else {
+                       ssc = sqrt(ssc) ;
+                    }
+
+                    q_new[i] = (ssc*ql_old[i] + qq_old[i]) ;
+
+                    if (fabs(q_new[i]) < q_cut) q_new[i] = 0.0 ;
+                 }
+               }
+              } // omp parallel
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_ENERGY_CALC_ALT)
+          case ENERGY_CALC_ALT : {   // --> from subset "A"
+
+//
+// NOTE: This is a slight variation on the OpenMP execution pattern
+//       in the kernel above.
+//
+
+            loopInit(iloop, stat);
+
+            Real_ptr e_new = loop_data.array_1D_Real[0];
+            Real_ptr e_old = loop_data.array_1D_Real[1];
+            Real_ptr delvc = loop_data.array_1D_Real[2];
+            Real_ptr p_new = loop_data.array_1D_Real[3];
+            Real_ptr p_old = loop_data.array_1D_Real[4];
+            Real_ptr q_new = loop_data.array_1D_Real[5];
+            Real_ptr q_old = loop_data.array_1D_Real[6];
+            Real_ptr work = loop_data.array_1D_Real[7];
+            Real_ptr compHalfStep = loop_data.array_1D_Real[8];
+            Real_ptr pHalfStep = loop_data.array_1D_Real[9];
+            Real_ptr bvc = loop_data.array_1D_Real[10];
+            Real_ptr pbvc = loop_data.array_1D_Real[11];
+            Real_ptr ql_old = loop_data.array_1D_Real[12];
+            Real_ptr qq_old = loop_data.array_1D_Real[13];
+            Real_ptr vnewc = loop_data.array_1D_Real[14];
+
+            const Real_type rho0 = loop_data.scalar_Real[0];
+            const Real_type e_cut = loop_data.scalar_Real[1];
+            const Real_type emin = loop_data.scalar_Real[2];
+            const Real_type q_cut = loop_data.scalar_Real[3];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               #pragma omp parallel for
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 e_new[i] = e_old[i] - 0.5 * delvc[i] * 
+                            (p_old[i] + q_old[i]) + 0.5 * work[i];
+               }
+
+               #pragma omp parallel for
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 if ( delvc[i] > 0.0 ) {
+                    q_new[i] = 0.0 ;
+                 }
+                 else {
+                    Real_type vhalf = 1.0 / (1.0 + compHalfStep[i]) ;
+                    Real_type ssc = ( pbvc[i] * e_new[i]
+                       + vhalf * vhalf * bvc[i] * pHalfStep[i] ) / rho0 ;
+
+                    if ( ssc <= 0.1111111e-36 ) {
+                       ssc = 0.3333333e-18 ;
+                    } else {
+                       ssc = sqrt(ssc) ;
+                    }
+
+                    q_new[i] = (ssc*ql_old[i] + qq_old[i]) ;
+                 }
+               }
+
+               #pragma omp parallel for
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 e_new[i] = e_new[i] + 0.5 * delvc[i]
+                    * ( 3.0*(p_old[i] + q_old[i])
+                         - 4.0*(pHalfStep[i] + q_new[i])) ;
+               }
+
+               #pragma omp parallel for
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 e_new[i] += 0.5 * work[i];
+
+                 if ( fabs(e_new[i]) < e_cut ) { e_new[i] = 0.0  ; }
+
+                 if ( e_new[i]  < emin ) { e_new[i] = emin ; }
+               }
+
+               #pragma omp parallel for
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 Real_type q_tilde ;
+
+                 if (delvc[i] > 0.0) { 
+                    q_tilde = 0. ; 
+                 }
+                 else {
+                    Real_type ssc = ( pbvc[i] * e_new[i]
+                        + vnewc[i] * vnewc[i] * bvc[i] * p_new[i] ) / rho0 ;
+
+                    if ( ssc <= 0.1111111e-36 ) {
+                       ssc = 0.3333333e-18 ;
+                    } else {
+                       ssc = sqrt(ssc) ;
+                    }
+
+                    q_tilde = (ssc*ql_old[i] + qq_old[i]) ;
+                 }
+
+                 e_new[i] = e_new[i] - ( 7.0*(p_old[i] + q_old[i])
+                                        - 8.0*(pHalfStep[i] + q_new[i])
+                                        + (p_new[i] + q_tilde)) * delvc[i] / 6.0 ;
+
+                 if ( fabs(e_new[i]) < e_cut ) {
+                    e_new[i] = 0.0  ;
+                 }
+                 if ( e_new[i]  < emin ) {
+                    e_new[i] = emin ;
+                 }
+               }
+
+               #pragma omp parallel for
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 if ( delvc[i] <= 0.0 ) {
+                    Real_type ssc = ( pbvc[i] * e_new[i]
+                            + vnewc[i] * vnewc[i] * bvc[i] * p_new[i] ) / rho0 ;
+
+                    if ( ssc <= 0.1111111e-36 ) {
+                       ssc = 0.3333333e-18 ;
+                    } else {
+                       ssc = sqrt(ssc) ;
+                    }
+
+                    q_new[i] = (ssc*ql_old[i] + qq_old[i]) ;
+
+                    if (fabs(q_new[i]) < q_cut) q_new[i] = 0.0 ;
+                 }
+               }
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_VOL3D_CALC)
+          case VOL3D_CALC : {   // --> from subset "A"
+
+            loopInit(iloop, stat);
+
+            Real_ptr x = loop_data.array_1D_Real[0];
+            Real_ptr y = loop_data.array_1D_Real[1];
+            Real_ptr z = loop_data.array_1D_Real[2];
+            Real_ptr vol = loop_data.array_1D_Real[3];
+
+            ADomain domain(ilength, /* ndims = */ 3);
+
+            UnalignedReal_ptr x0,x1,x2,x3,x4,x5,x6,x7 ;
+            UnalignedReal_ptr y0,y1,y2,y3,y4,y5,y6,y7 ;
+            UnalignedReal_ptr z0,z1,z2,z3,z4,z5,z6,z7 ;
+
+            NDPTRSET(x,x0,x1,x2,x3,x4,x5,x6,x7) ;
+            NDPTRSET(y,y0,y1,y2,y3,y4,y5,y6,y7) ;
+            NDPTRSET(z,z0,z1,z2,z3,z4,z5,z6,z7) ;
+
+            const Real_type vnormq = 0.083333333333333333; /* vnormq = 1/12 */
+
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               #pragma omp parallel for
+               for (Index_type i = domain.fpz ; i <= domain.lpz ; i++ ) {
+
+                  Real_type x71 = x7[i] - x1[i] ;
+                  Real_type x72 = x7[i] - x2[i] ;
+                  Real_type x74 = x7[i] - x4[i] ;
+                  Real_type x30 = x3[i] - x0[i] ;
+                  Real_type x50 = x5[i] - x0[i] ;
+                  Real_type x60 = x6[i] - x0[i] ;
+
+                  Real_type y71 = y7[i] - y1[i] ;
+                  Real_type y72 = y7[i] - y2[i] ;
+                  Real_type y74 = y7[i] - y4[i] ;
+                  Real_type y30 = y3[i] - y0[i] ;
+                  Real_type y50 = y5[i] - y0[i] ;
+                  Real_type y60 = y6[i] - y0[i] ;
+
+                  Real_type z71 = z7[i] - z1[i] ;
+                  Real_type z72 = z7[i] - z2[i] ;
+                  Real_type z74 = z7[i] - z4[i] ;
+                  Real_type z30 = z3[i] - z0[i] ;
+                  Real_type z50 = z5[i] - z0[i] ;
+                  Real_type z60 = z6[i] - z0[i] ;
+
+                  Real_type xps = x71 + x60 ;
+                  Real_type yps = y71 + y60 ;
+                  Real_type zps = z71 + z60 ;
+
+                  Real_type cyz = y72 * z30 - z72 * y30 ;
+                  Real_type czx = z72 * x30 - x72 * z30 ;
+                  Real_type cxy = x72 * y30 - y72 * x30 ;
+                  vol[i] = xps * cyz + yps * czx + zps * cxy ; 
+
+                  xps = x72 + x50 ;
+                  yps = y72 + y50 ;
+                  zps = z72 + z50 ;
+
+                  cyz = y74 * z60 - z74 * y60 ;
+                  czx = z74 * x60 - x74 * z60 ;
+                  cxy = x74 * y60 - y74 * x60 ;
+                  vol[i] += xps * cyz + yps * czx + zps * cxy ;
+
+                  xps = x74 + x30 ;
+                  yps = y74 + y30 ;
+                  zps = z74 + z30 ;
+
+                  cyz = y71 * z50 - z71 * y50 ;
+                  czx = z71 * x50 - x71 * z50 ;
+                  cxy = x71 * y50 - y71 * x50 ;
+                  vol[i] += xps * cyz + yps * czx + zps * cxy ;
+
+                  vol[i] *= vnormq ;
+
+               }
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_DEL_DOT_VEC_2D)
+          case DEL_DOT_VEC_2D : {   // --> from subset "A"
+
+            loopInit(iloop, stat);
+
+            Real_ptr x = loop_data.array_1D_Real[0];
+            Real_ptr y = loop_data.array_1D_Real[1];
+            Real_ptr xdot = loop_data.array_1D_Real[2];
+            Real_ptr ydot = loop_data.array_1D_Real[3];
+            Real_ptr div = loop_data.array_1D_Real[4];
+
+            ADomain domain(ilength, /* ndims = */ 2);
+
+            UnalignedReal_ptr x1,x2,x3,x4 ;
+            UnalignedReal_ptr y1,y2,y3,y4 ;
+            UnalignedReal_ptr fx1,fx2,fx3,fx4 ;
+            UnalignedReal_ptr fy1,fy2,fy3,fy4 ;
+
+            NDSET2D(x,x1,x2,x3,x4) ;
+            NDSET2D(y,y1,y2,y3,y4) ;
+            NDSET2D(xdot,fx1,fx2,fx3,fx4) ;
+            NDSET2D(ydot,fy1,fy2,fy3,fy4) ;
+
+            const Real_type ptiny = 1.0e-20;
+            const Real_type half  = 0.5;
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               #pragma omp parallel for
+               for (Index_type ii = 0 ; ii < domain.n_real_zones ; ii++ ) {
+
+                  Index_type i  = domain.real_zones[ii] ;
+
+                  Real_type xi  = half * ( x1[i]  + x2[i]  - x3[i]  - x4[i]  ) ;
+                  Real_type xj  = half * ( x2[i]  + x3[i]  - x4[i]  - x1[i]  ) ;
+
+                  Real_type yi  = half * ( y1[i]  + y2[i]  - y3[i]  - y4[i]  ) ;
+                  Real_type yj  = half * ( y2[i]  + y3[i]  - y4[i]  - y1[i]  ) ;
+
+                  Real_type fxi = half * ( fx1[i] + fx2[i] - fx3[i] - fx4[i] ) ;
+                  Real_type fxj = half * ( fx2[i] + fx3[i] - fx4[i] - fx1[i] ) ;
+
+                  Real_type fyi = half * ( fy1[i] + fy2[i] - fy3[i] - fy4[i] ) ;
+                  Real_type fyj = half * ( fy2[i] + fy3[i] - fy4[i] - fy1[i] ) ;
+
+                  Real_type rarea  = 1.0 / ( xi * yj - xj * yi + ptiny ) ;
+
+                  Real_type dfxdx  = rarea * ( fxi * yj - fxj * yi ) ;
+
+                  Real_type dfydy  = rarea * ( fyj * xi - fyi * xj ) ;
+
+                  Real_type affine = ( fy1[i] + fy2[i] + fy3[i] + fy4[i] ) /
+                                     ( y1[i]  + y2[i]  + y3[i]  + y4[i]  ) ;
+
+                  div[i] = dfxdx + dfydy + affine ;
+
+               }    
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_COUPLE)
+          case COUPLE : {   // --> from subset "A"
+
+            loopInit(iloop, stat);
+
+            Complex_ptr t0 = loop_data.array_1D_Complex[0];
+            Complex_ptr t1 = loop_data.array_1D_Complex[1];
+            Complex_ptr t2 = loop_data.array_1D_Complex[2];
+            Complex_ptr denac = loop_data.array_1D_Complex[3];
+            Complex_ptr denlw = loop_data.array_1D_Complex[4];
+
+
+            ADomain domain(ilength, /* ndims = */ 3);
+
+            Index_type imin = domain.imin;
+            Index_type imax = domain.imax;
+            Index_type jmin = domain.jmin;
+            Index_type jmax = domain.jmax;
+            Index_type kmin = domain.kmin;
+            Index_type kmax = domain.kmax;
+
+            const Real_type clight=3.e+10;
+            const Real_type csound=3.09e+7;
+            const Real_type omega0= 0.9;
+            const Real_type omegar= 0.9;
+            const Real_type dt= 0.208;
+            const Real_type c10 = 0.25 * (clight / csound);
+            const Real_type fratio = sqrt(omegar / omega0);
+            const Real_type r_fratio = 1.0/fratio;
+            const Real_type c20 = 0.25 * (clight / csound) * r_fratio;
+            const Complex_type ireal(0.0, 1.0);
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               #pragma omp parallel for
+               for (Index_type k = kmin; k < kmax; k++) {
+
+                  for (Index_type j = jmin; j < jmax; j++) {
+
+                     Index_type it0=    ((k)*(jmax+1) + (j))*(imax+1) ;
+                     Index_type idenac= ((k)*(jmax+2) + (j))*(imax+2) ;
+
+                     for (Index_type i = imin; i < imax; i++) {
+
+                        Complex_type c1 = c10 * denac[idenac+i];
+                        Complex_type c2 = c20 * denlw[it0+i];
+
+                        /* promote to doubles to avoid possible divide by zero
+                           errors later on. */
+                        Real_type c1re = real(c1);  Real_type c1im = imag(c1);
+                        Real_type c2re = real(c2);  Real_type c2im = imag(c2);
+
+                        /* compute lamda = sqrt(|c1|^2 + |c2|^2) using doubles
+                           to avoid underflow. */
+                        Real_type zlam = c1re*c1re + c1im*c1im +
+                                         c2re*c2re + c2im*c2im + 1.0e-34;
+                        zlam = sqrt(zlam);
+                        Real_type snlamt = sin(zlam * dt * 0.5);
+                        Real_type cslamt = cos(zlam * dt * 0.5);
+
+                        Complex_type a0t = t0[it0+i];
+                        Complex_type a1t = t1[it0+i];
+                        Complex_type a2t = t2[it0+i] * fratio;
+
+                        Real_type r_zlam= 1.0/zlam;
+                        c1 *= r_zlam;
+                        c2 *= r_zlam;
+                        Real_type zac1 = zabs2(c1);
+                        Real_type zac2 = zabs2(c2);
+
+                        /* compute new A0 */
+                        Complex_type z3 = ( c1 * a1t + c2 * a2t ) * snlamt ;
+                        t0[it0+i] = a0t * cslamt -  ireal * z3;
+
+                        /* compute new A1  */
+                        Real_type r = zac1 * cslamt + zac2;
+                        Complex_type z5 = c2 * a2t;
+                        Complex_type z4 = conj(c1) * z5 * (cslamt-1);
+                        z3 = conj(c1) * a0t * snlamt;
+                        t1[it0+i] = a1t * r + z4 - ireal * z3;
+
+                        /* compute new A2  */
+                        r = zac1 + zac2 * cslamt;
+                        z5 = c1 * a1t;
+                        z4 = conj(c2) * z5 * (cslamt-1);
+                        z3 = conj(c2) * a0t * snlamt;
+                        t2[it0+i] = ( a2t * r + z4 - ireal * z3 ) * r_fratio;
+
+                     }  // i loop
+
+                  }  // j loop
+
+               }  // k loop
+    
+            } // isamp loop
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_FIR)
+          case FIR : {   // --> from subset "A"
+
+            loopInit(iloop, stat);
+
+            Real_ptr out = loop_data.array_1D_Real[0];
+            Real_ptr in = loop_data.array_1D_Real[1];
+
+            const Index_type coefflen = 16;
+            Real_type coeff[coefflen] = { 3.0, -1.0, -1.0, -1.0, 
+                                          -1.0, 3.0, -1.0, -1.0, 
+                                          -1.0, -1.0, 3.0, -1.0, 
+                                          -1.0, -1.0, -1.0, 3.0 };
+            const Index_type len_minus_coeff = len - coefflen;
+
+            Index_type val = 0; 
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               #pragma omp parallel for
+               for (Index_type i = 0 ; i < len_minus_coeff ; i++ ) {
+
+                  Real_type sum = 0.0;
+
+                  for (Index_type j = 0; j < coefflen; ++j ) {
+                     sum += coeff[j]*in[i+j];
+                  }
+                  out[i] = sum;
+
+               }
+
+               val = isamp; 
+
+            }
+            TIMER_STOP(ltimer);
+
+            //
+            // RDH added this. Without it compiler may optimize out outer 
+            // sampling loop since each sample pass results in identical output.
+            //
+            loop_data.scalar_Real[0] =
+               (val + 0.00123) / (val - 0.00123);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_INIT3)
+          case INIT3 : {   // --> from subset "B"
+
+            loopInit(iloop, stat);
+
+            Real_ptr out1 = loop_data.array_1D_Real[0];
+            Real_ptr out2 = loop_data.array_1D_Real[1];
+            Real_ptr out3 = loop_data.array_1D_Real[2];
+            Real_ptr in1 = loop_data.array_1D_Real[3];
+            Real_ptr in2 = loop_data.array_1D_Real[4];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               #pragma omp parallel for
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 out1[i] = out2[i] = out3[i] = - in1[i] - in2[i];
+               }
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_MULADDSUB)
+          case MULADDSUB : {   // --> from subset "B"
+
+            loopInit(iloop, stat);
+
+            Real_ptr out1 = loop_data.array_1D_Real[0];
+            Real_ptr out2 = loop_data.array_1D_Real[1];
+            Real_ptr out3 = loop_data.array_1D_Real[2];
+            Real_ptr in1 = loop_data.array_1D_Real[3];
+            Real_ptr in2 = loop_data.array_1D_Real[4];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               #pragma omp parallel for
+               for (Index_type i=0 ; i<len ; i++ ) {
+                 out1[i] = in1[i] * in2[i] ;
+                 out2[i] = in1[i] + in2[i] ;
+                 out3[i] = in1[i] - in2[i] ;
+               }
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_IF_QUAD)
+          case IF_QUAD : {   // --> from subset "B"
+
+            loopInit(iloop, stat);
+
+            Real_ptr a = loop_data.array_1D_Real[0];
+            Real_ptr b = loop_data.array_1D_Real[1];
+            Real_ptr c = loop_data.array_1D_Real[2];
+            Real_ptr x1 = loop_data.array_1D_Real[3];
+            Real_ptr x2 = loop_data.array_1D_Real[4];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               #pragma omp parallel for
+               for (Index_type i=0 ; i<len ; i++ ) {
+                  Real_type s = b[i]*b[i] - 4.0*a[i]*c[i];
+                  if ( s >= 0 ) {
+                     s = sqrt(s);
+                     x2[i] = (-b[i]+s)/(2.0*a[i]);
+                     x1[i] = (-b[i]-s)/(2.0*a[i]);
+                  } else {
+                     x2[i] = 0.0;
+                     x1[i] = 0.0;
+                  }
+               }
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_TRAP_INT)
+          case TRAP_INT : {  // --> from subset "B"
+
+            loopInit(iloop, stat);
+
+            Real_type xn = loop_data.scalar_Real[0];
+            Real_type x0 = loop_data.scalar_Real[1];
+            Real_type xp = loop_data.scalar_Real[2];
+            Real_type y = loop_data.scalar_Real[3];
+            Real_type yp = loop_data.scalar_Real[4];
+
+            Index_type nx = loop_data.array_1D_Indx[0][0] + 1;
+
+            const Real_type h = (xn - x0) / nx;
+            Real_type sumx = 0.5*( trap_int_func(x0, y, xp, yp) +
+                                   trap_int_func(xn, y, xp, yp) );
+
+            Real_type val = 0;
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               #pragma omp parallel for reduction (+:sumx)
+               for (Index_type i=0 ; i<len ; i++ ) {
+                  Real_type x = x0 + i*h;
+                  sumx += trap_int_func(x, y, xp, yp);
+               }
+
+               val = sumx * h;
+
+            }
+            TIMER_STOP(ltimer);
+
+            //
+            // RDH put this here to prevent compiler from optimizing anything
+            // out since result of loop (sumx) would not be used otherwise.
+            //
+            loop_data.scalar_Real[0] =
+               (val + 0.00123) / (val - 0.00123);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+#if defined(COMPILE_PIC_2D)
+          case PIC_2D : {
+
+            loopInit(iloop, stat);
+
+            //
+            // RDH modified kernel to fix zero-based indexing error.
+            //
+
+            Real_ptr* p = loop_data.array_2D_Nx25_Real[0];
+            Real_ptr* b = loop_data.array_2D_Nx25_Real[1];
+            Real_ptr* c = loop_data.array_2D_Nx25_Real[2];
+
+            Real_ptr y = loop_data.array_1D_Real[0];
+            Real_ptr z = loop_data.array_1D_Real[1];
+
+            Index_type* e = loop_data.array_1D_Indx[0];
+            Index_type* f = loop_data.array_1D_Indx[1];
+
+            Real_ptr* h = loop_data.array_2D_64x64_Real[0];
+
+            TIMER_START(ltimer);
+            for (SampIndex_type isamp = 0; isamp < num_samples; ++isamp) {
+
+               #pragma omp parallel for
+               for (Index_type ip=0 ; ip<len ; ip++ ) {
+                  Index_type i1, j1, i2, j2;
+                  i1 = (Index_type) p[ip][0];
+                  j1 = (Index_type) p[ip][1];
+                  i1 &= 64-1;
+                  j1 &= 64-1;
+                  p[ip][2] += b[j1][i1];
+                  p[ip][3] += c[j1][i1];
+                  p[ip][0] += p[ip][2];
+                  p[ip][1] += p[ip][3];
+                  i2 = (Index_type) p[ip][0];
+                  j2 = (Index_type) p[ip][1];
+                  i2 = ( i2 & 64-1 ) ;
+                  j2 = ( j2 & 64-1 ) ;
+                  p[ip][0] += y[i2+32];
+                  p[ip][1] += z[j2+32];
+                  i2 += e[i2+32];
+                  j2 += f[j2+32];
+                  #pragma omp atomic
+                  h[j2][i2] += 1.0;
+               }
+
+            }
+            TIMER_STOP(ltimer);
+
+            loopFinalize(iloop, stat, ilength);
+
+            break;
+          }
+#endif
+
+
+          default: {
+//          std::cout << "\n Unknown loop id = " << iloop << std::endl;
+          }
+
+         } // switch on loop id
+
+         copyTimer(stat, ilength, ltimer);
+
+      }  // if loop with id should be run 
+
+   }  // for loop over loops
+
+#endif  // if COMPILE_RAW_VARIANTS && COMPILE_OMP_VARIANTS
+
+}

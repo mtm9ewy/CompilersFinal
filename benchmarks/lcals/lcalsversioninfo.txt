@@ -1,0 +1,31 @@
+
+/********************************************************************
+* LCALS compilation information created by 'lcals_vesion'
+* script during make process....
+********************************************************************/
+
+#define VER_MACHINE "kevin-pc
+"
+#define VER_DATE "04/18/23"
+#define VER_TIME "10:43:44"
+#define VER_OS " Linux 6.1.23-1-lts #1 SMP PREEMPT_DYNAMIC Thu, 06 Apr 2023 10:56:12 +0000"
+#define VER_COMPILER "clang++"
+#define VER_PERSON "kevin"
+
+#define LCALS_VER_INFO_MAX 3
+
+static char *lcals_ver_info_names[LCALS_VER_INFO_MAX] = {
+   "CXX_COMPILE",
+   "CXX_FLAGS_BUILD",
+   "LDFLAGS"
+};
+
+#define LCALS_VER_INFO_NUM 3
+
+static char *lcals_ver_info_values[LCALS_VER_INFO_NUM] = {
+   "clang++ -O3 -finline-functions -ffast-math -std=c++0x ",
+   "-I. -DLCALS_PLATFORM_BGQ -DLCALS_COMPILER_CLANG -DLCALS_USE_DOUBLE -DLCALS_USE_RESTRICT_PTR -DLCALS_VERIFY_CHECKSUM_ABBREVIATED -DLCALS_USE_CLOCK  ",
+   " "
+};
+
+
