@@ -8,41 +8,42 @@ default: header
 	       
 BT: bt
 bt: header
-	cd BT; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
+	cd BT; $(MAKE) CLASS=$(CLASS) OPTFLAGS='$(OPTFLAGS)'
 		       
 SP: sp		       
 sp: header	       
-	cd SP; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
+	cd SP; $(MAKE) CLASS=$(CLASS) OPTFLAGS='$(OPTFLAGS)'
 		       
 LU: lu		       
 lu: header	       
-	cd LU; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
+	cd LU; $(MAKE) CLASS=$(CLASS) OPTFLAGS='$(OPTFLAGS)'
 		       
 MG: mg		       
 mg: header	       
-	cd MG; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
+	cd MG; $(MAKE) CLASS=$(CLASS) OPTFLAGS='$(OPTFLAGS)'
 		       
 FT: ft		       
 ft: header	       
-	cd FT; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
+	cd FT; $(MAKE) CLASS=$(CLASS) OPTFLAGS='$(OPTFLAGS)'
 		       
 IS: is		       
 is: header	       
-	cd IS; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
+	cd IS; $(MAKE) CLASS=$(CLASS) OPTFLAGS='$(OPTFLAGS)'
 		       
 CG: cg		       
 cg: header	       
-	cd CG; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
+	cd CG; $(MAKE) CLASS=$(CLASS) OPTFLAGS='$(OPTFLAGS)'
 		       
 EP: ep		       
 ep: header	       
-	cd EP; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
+	cd EP; $(MAKE) CLASS=$(CLASS) OPTFLAGS='$(OPTFLAGS)'
 
 
 # Awk script courtesy cmg@cray.com
 suite:
+	echo $(OPTFLAGS)
 	@ awk '{ if ($$1 !~ /^#/ &&  NF > 0)                              \
-	printf "make %s CLASS=%s\n", $$1, $$2 }' $(SFILE)  \
+	printf "make %s CLASS=%s OPTFLAGS=\"$(OPTFLAGS)\"\n", $$1, $$2}' $(SFILE)  \
 	| $(SHELL)
 
 run: 
