@@ -14,5 +14,13 @@ gcc-loops: FORCE
 clean :
 	rm -f *.o *.s *.ll *.bc
 
+run:
+	./gcc-loops
+
+size:
+	du gcc-loops
+
+
+
 FORCE: ;
 

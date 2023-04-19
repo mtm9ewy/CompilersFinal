@@ -45,6 +45,19 @@ suite:
 	printf "make %s CLASS=%s\n", $$1, $$2 }' $(SFILE)  \
 	| $(SHELL)
 
+run: 
+	./bin/bt.W
+	./bin/cg.W
+	./bin/ep.W
+	./bin/ft.W
+	./bin/is.W
+	./bin/lu.W
+	./bin/mg.W
+	./bin/sp.W
+
+size: 
+	du bin/*.W
+
 
 # It would be nice to make clean in each subdirectory (the targets
 # are defined) but on a really clean system this will won't work

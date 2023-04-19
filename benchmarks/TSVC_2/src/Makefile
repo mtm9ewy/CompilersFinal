@@ -18,3 +18,8 @@ tsvc: tsvc.o dummy.o common.o
 clean :
 	rm -f *.o *.s *.ll *.bc
 
+run :
+	./tsvc
+
+size :
+	du tsvc
