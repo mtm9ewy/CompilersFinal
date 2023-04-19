@@ -1,33 +1,20 @@
-
-include ../makefiles/Makefile.defs
-
-COMMON_FILES=dummy.o common.o
-
-BIN_DIR=../bin/$(COMPILER)
+.PHONY: all clean
 
 libs=-lm
 
-all : $(BIN_DIR)/tsvc_vec $(BIN_DIR)/tsvc_novec
+CC=clang-14
+OPT=opt-14
 
-$(BIN_DIR)/tsvc_% : tsvc_%.o $(COMMON_FILES)
-	@mkdir -p $(BIN_DIR)
-	$(CC) $^ $(libs) -o $@$(SUFFIX)
+all: tsvc
 
-%_novec.o:%.c .FORCE
-	$(CC) $(flags) $(novecflags) -c -o $@ $<
+tsvc: tsvc.o dummy.o common.o
+	$(CC) $^ $(libs) -o tsvc
 
-%_vec.o:%.c .FORCE
-	$(CC) $(flags) $(vecflags) -c -o $@ $<
-
-# Compiled with IEEE math flags to make initialisation/checksum calculations more reproducable
-# Be wary that PGI doesn't respect IEEE properly with vectorisation
-%.o:%.c .FORCE
-	$(CC) $(flags) $(vecflags) $(ieee_math_flags) -c -o $@ $<
-
-.PHONY: .FORCE clean
-.FORCE:
-	@true
+%.o : %.c 
+	$(CC) -S -c -emit-llvm -o $*.bc $<
+	$(OPT) -enable-new-pm=0 $(OPTFLAGS) -S -o $*.ll $*.bc
+	$(CC) -c -o $@ $*.ll
 
 clean :
-	rm -f *.o *.s
+	rm -f *.o *.s *.ll *.bc
 
