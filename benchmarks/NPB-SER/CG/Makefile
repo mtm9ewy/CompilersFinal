@@ -13,7 +13,9 @@ ${PROGRAM}: config ${OBJS}
 	${CLINK} ${CLINKFLAGS} -o ${PROGRAM} ${OBJS} ${C_LIB}
 
 cg.o:             cg.cpp npbparams.hpp
-	${CCOMPILE} cg.cpp
+	${CC} -S -c -emit-llvm -o cg.bc cg.cpp
+	$(OPT) -enable-new-pm=0 $(OPTFLAGS) -S -o cg.ll cg.bc
+	$(CC) -c cg.ll
 
 clean:
 	- rm -f *.o *~ 

@@ -13,7 +13,9 @@ ${PROGRAM}: config ${OBJS}
 	${CLINK} ${CLINKFLAGS} -o ${PROGRAM} ${OBJS} ${C_LIB}
 
 ep.o:		ep.cpp npbparams.hpp
-	${CCOMPILE} ep.cpp
+	${CC} -S -c -emit-llvm -o ep.bc ep.cpp
+	$(OPT) -enable-new-pm=0 $(OPTFLAGS) -S -o ep.ll ep.bc
+	$(CC) -c ep.ll
 
 clean:
 	- rm -f *.o *~ 

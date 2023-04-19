@@ -8,35 +8,35 @@ default: header
 	       
 BT: bt
 bt: header
-	cd BT; $(MAKE) CLASS=$(CLASS)
+	cd BT; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
 		       
 SP: sp		       
 sp: header	       
-	cd SP; $(MAKE) CLASS=$(CLASS)
+	cd SP; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
 		       
 LU: lu		       
 lu: header	       
-	cd LU; $(MAKE) CLASS=$(CLASS)
+	cd LU; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
 		       
 MG: mg		       
 mg: header	       
-	cd MG; $(MAKE) CLASS=$(CLASS)
+	cd MG; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
 		       
 FT: ft		       
 ft: header	       
-	cd FT; $(MAKE) CLASS=$(CLASS)
+	cd FT; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
 		       
 IS: is		       
 is: header	       
-	cd IS; $(MAKE) CLASS=$(CLASS)
+	cd IS; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
 		       
 CG: cg		       
 cg: header	       
-	cd CG; $(MAKE) CLASS=$(CLASS)
+	cd CG; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
 		       
 EP: ep		       
 ep: header	       
-	cd EP; $(MAKE) CLASS=$(CLASS)
+	cd EP; $(MAKE) CLASS=$(CLASS) OPTFLAGS=$(OPTFLAGS)
 
 
 # Awk script courtesy cmg@cray.com

@@ -27,7 +27,8 @@
 #---------------------------------------------------------------------------
 # This is the C compiler used for OpenMP programs
 #---------------------------------------------------------------------------
-CC = clang++ -std=c++14
+CC = clang++-14 -std=c++14
+OPT = opt-14
 
 
 # This links C programs; usually the same as ${CC}

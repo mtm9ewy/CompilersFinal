@@ -13,7 +13,9 @@ ${PROGRAM}: config ${OBJS}
 	${CLINK} ${CLINKFLAGS} -o ${PROGRAM} ${OBJS} ${C_LIB}
 
 ft.o:             ft.cpp npbparams.hpp
-	${CCOMPILE} ft.cpp
+	${CC} -S -c -emit-llvm -o ft.bc ft.cpp
+	$(OPT) -enable-new-pm=0 $(OPTFLAGS) -S -o ft.ll ft.bc
+	$(CC) -c ft.ll
 
 clean:
 	- rm -f *.o *~ mputil*

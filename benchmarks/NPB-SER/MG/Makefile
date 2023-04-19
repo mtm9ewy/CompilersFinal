@@ -13,7 +13,9 @@ ${PROGRAM}: config ${OBJS}
 	${CLINK} ${CLINKFLAGS} -o ${PROGRAM} ${OBJS} ${C_LIB}
 
 mg.o:		mg.cpp npbparams.hpp 
-	${CCOMPILE} mg.cpp
+	${CC} -S -c -emit-llvm -o mg.bc mg.cpp
+	$(OPT) -enable-new-pm=0 $(OPTFLAGS) -S -o mg.ll mg.bc
+	$(CC) -c mg.ll
 
 clean:
 	- rm -f *.o *~ 

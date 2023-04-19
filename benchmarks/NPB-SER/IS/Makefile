@@ -14,7 +14,9 @@ ${PROGRAM}: config ${OBJS}
 
 
 is.o:		is.cpp npbparams.hpp
-	${CCOMPILE} is.cpp
+	${CC} -S -c -emit-llvm -o is.bc is.cpp
+	$(OPT) -enable-new-pm=0 $(OPTFLAGS) -S -o is.ll is.bc
+	$(CC) -c is.ll
 
 clean:
 	- rm -f *.o *~ 
