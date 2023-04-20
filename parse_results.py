@@ -30,20 +30,20 @@ def parse_npb_results(filepath):
 def parse_lcals_results(directory_path):
     results = []
 
-    for loop_type in ["Forall_Lambda", "Raw"]:
-        filepath = f"{directory_path}/{loop_type}-meantime.txt"
-        with open(filepath, "r", newline="") as file:
-            reader = csv.reader(file)
-            # Read the first header
-            next(reader)
+    loop_type = "Raw"
+    filepath = f"{directory_path}/{loop_type}-meantime.txt"
+    with open(filepath, "r", newline="") as file:
+        reader = csv.reader(file)
+        # Read the first header
+        next(reader)
 
-            # Read the second header
-            loop_lengths = next(reader)
-            loop_lengths = loop_lengths[1:]
+        # Read the second header
+        loop_lengths = next(reader)
+        loop_lengths = loop_lengths[1:]
 
-            for line in reader:
-                for i, loop_length in enumerate(loop_lengths):
-                    results.append((f"{loop_type}_{line[0].strip()}_{loop_length.strip()}", line[i + 1].strip()))
+        for line in reader:
+            for i, loop_length in enumerate(loop_lengths):
+                results.append((f"{loop_type}_{line[0].strip()}_{loop_length.strip()}", line[i + 1].strip()))
 
     return results
 
