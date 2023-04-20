@@ -1,7 +1,7 @@
 .PHONY: all clean
 
-CC=clang++-14
-OPT=opt-14
+CC=clang++
+OPT=opt
 
 all: gcc-loops
 

@@ -41,6 +41,7 @@ ep: header
 
 # Awk script courtesy cmg@cray.com
 suite:
+	mkdir -p bin
 	echo $(OPTFLAGS)
 	@ awk '{ if ($$1 !~ /^#/ &&  NF > 0)                              \
 	printf "make %s CLASS=%s OPTFLAGS=\"$(OPTFLAGS)\"\n", $$1, $$2}' $(SFILE)  \
@@ -48,16 +49,23 @@ suite:
 
 run: 
 	./bin/bt.W
-	./bin/cg.W
+	./bin/cg.A
 	./bin/ep.W
-	./bin/ft.W
-	./bin/is.W
+	./bin/ft.A
+	./bin/is.B
 	./bin/lu.W
-	./bin/mg.W
+	./bin/mg.A
 	./bin/sp.W
 
 size: 
-	du bin/*.W
+	du bin/bt.W
+	du bin/cg.A
+	du bin/ep.W
+	du bin/ft.A
+	du bin/is.B
+	du bin/lu.W
+	du bin/mg.A
+	du bin/sp.W
 
 
 # It would be nice to make clean in each subdirectory (the targets

@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
    //
    // Define some variables used to define part of suite execution.
    //
-   bool do_fom = true;
+   bool do_fom = false;
    bool run_misc = false;
    bool input_error = false;
    std::string output_dirname;
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
    // Smaller value reduces total run time. However, a value too
    // small will result in inaccurate timings.
    //
-   double sample_frac = 1.0;
+   double sample_frac = 16384.0;
 
    //
    // Specify multiplication factor used to deviate from pre-defined loop 
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
    // of iterations of "domain-based" loops by a^N, where N is the 
    // spatial dimension of the domain used by the loop.
    //
-   double loop_length_factor = 1.0;
+   double loop_length_factor = 6.0;
 
    //
    //  Specify which loops lengths to run by true/false
@@ -121,8 +121,8 @@ int main(int argc, char *argv[])
    //
    bool run_loop_length[NUM_LENGTHS];
    run_loop_length[LONG] = true;
-   run_loop_length[MEDIUM] = true;
-   run_loop_length[SHORT] = true;
+   run_loop_length[MEDIUM] = false;
+   run_loop_length[SHORT] = false;
 
 
    //
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
    run_loop[ENERGY_CALC_ALT   ] = true;
    run_loop[VOL3D_CALC    ] = true;
    run_loop[DEL_DOT_VEC_2D] = true;
-   run_loop[COUPLE        ] = true;
+   run_loop[COUPLE        ] = false;
    run_loop[FIR           ] = true;
 
    // Loop Subset B: "Basic" Loops.
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
    run_loop[ENERGY_CALC   ] = true;
    run_loop[VOL3D_CALC    ] = true;
    run_loop[DEL_DOT_VEC_2D] = true;
-   run_loop[COUPLE        ] = true;
+   run_loop[COUPLE        ] = false;
    run_loop[FIR           ] = true;
 
    // Loop Subset B: "Basic" Loops.
@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
 #else  // run other variants in addition to OMP variants
 
       run_variants.push_back(RAW);
-      run_variants.push_back(FORALL_LAMBDA);
+      // run_variants.push_back(FORALL_LAMBDA);
       // TODO: I commented out the below two lines
       //run_variants.push_back(RAW_OMP);
       //run_variants.push_back(FORALL_LAMBDA_OMP);

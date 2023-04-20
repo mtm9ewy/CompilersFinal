@@ -333,7 +333,7 @@ void generateTimingReport(const vector< string >& run_loop_variants,
 {
    if ( run_loop_variants.size() == 0 ) return;
 
-   bool do_fom = true;
+   bool do_fom = false;
 
    std::string ver_info = buildVersionInfo(); 
 

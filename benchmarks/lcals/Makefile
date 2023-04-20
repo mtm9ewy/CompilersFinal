@@ -54,8 +54,8 @@ ifeq ($(LCALS_ARCH),bgq_clang)
 #CXX             = /usr/apps/gnu/clang/r189357-20130827/bin/bgclang++11
 #CXX             = /usr/apps/gnu/clang/r190771-20130914/bin/bgclang++11
 #CXX             = /usr/apps/gnu/clang/r192411-20131010/bin/bgclang++11
-CXX             = clang++-14 --std=c++14
-OPT             = opt-14
+CXX             = clang++ --std=c++14
+OPT             = opt
 
 
 
