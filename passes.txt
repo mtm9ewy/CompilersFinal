@@ -1,0 +1,16 @@
+-loop-deletion
+-loop-extract
+-loop-extract-single
+-loop-reduce
+-loop-rotate
+-loop-simplify
+-loop-unroll
+-loop-unroll-and-jam
+-loop-unswitch
+-loop-distribute
+-loop-sink
+-loop-load-elim
+-loop-idiom
+-licm
+-loop-vectorize
+-lcssa

@@ -1,19 +1,32 @@
 #!/bin/bash
 
-passes="passperms.txt"
-tests="testpaths.txt"
-results="results.txt"
+#SBATCH --job-name="SLURM Loop Optimization Ordering"
+#SBATCH --error="loop_pass.err"
+#SBATCH --output="loop_pass.output"
 
-> "$results"
+source /etc/profile.d/modules.sh
+module load python3
+module load clang-llvm-14.0.6
 
-while read p; do
-    while read t; do
-        clang-14 -S -c -emit-llvm ${t} -o ${t}.bc
-        opt-14 -enable-new-pm=0 -mem2reg ${p} ${t}.bc -S -o ${t}.ll
-        echo ${p} >> "$results"
-        echo ${t} >> "$results"
-        (time clang-14 ${t}.ll)2>>"$results"
-        (time ./a.out)2>>"$results"
-        du a.out >> "$results"
-    done < "$tests"
-done < "$passes"
+start="$1"
+stop="$2"
+
+GCC_DIR="gcc_loops_${start}"
+LCALS_DIR="lcals_${start}"
+NPB_DIR="NPB-SER_${start}"
+
+# Create working directories
+cp -r benchmarks/gcc_loops "benchmarks/${GCC_DIR}"
+cp -r benchmarks/lcals "benchmarks/${LCALS_DIR}"
+cp -r benchmarks/NPB-SER "benchmarks/${NPB_DIR}"
+
+for i in $(seq "${start}" "${stop}")
+do
+    echo "$i"
+    bash run_test.sh "$i" "$GCC_DIR" "$LCALS_DIR" "$NPB_DIR"
+done
+
+# Remove working directories
+rm -r "benchmarks/${GCC_DIR}"
+rm -r "benchmarks/${LCALS_DIR}"
+rm -r "benchmarks/${NPB_DIR}"
