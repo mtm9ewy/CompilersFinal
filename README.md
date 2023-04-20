@@ -13,6 +13,9 @@ The followng optimizations are always run:
 -mem2reg -loop-simplify -lcssa -loop-rotate -licm
 ```
 
+### SLURM
+To run using SLURM, copy the contents of `command.txt` and replace the starting and ending value arguments. 
+
 ### Running Individually
 To run the GCC loops, TSVC, or LCALS benchmark, use the following as a guideline:
 ```
