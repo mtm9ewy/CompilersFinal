@@ -113,7 +113,7 @@ lcals: $(OBJFILES)
 	$(CXX) -c -o $@ $*.ll
 
 run: 
-	./lcals
+	./lcals $(OUTDIR)
 
 size: 
 	du lcals
