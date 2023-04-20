@@ -388,12 +388,12 @@ int main(int argc,char* argv[]){
   BENCH("Example24",  example24(2,4), Mi*2, 0);
   BENCH("Example25",  example25(), Mi*2, digest_memory(&dj[0], &dj[N]));
 
-  std::cout<<std::hex;
-  std::cout<<"Results: ("<<std::accumulate(results.begin(), results.end(), 0)<<"):";
-  for (unsigned i=0; i < results.size(); ++i) {
-    std::cout<<" "<<results[i];
-  }
-  std::cout<<"\n";
+  // std::cout<<std::hex;
+  // std::cout<<"Results: ("<<std::accumulate(results.begin(), results.end(), 0)<<"):";
+  // for (unsigned i=0; i < results.size(); ++i) {
+  //   std::cout<<" "<<results[i];
+  // }
+  // std::cout<<"\n";
 
   return 0;
 }
