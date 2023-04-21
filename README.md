@@ -14,7 +14,7 @@ The followng optimizations are always run:
 ```
 
 ### SLURM
-To run using SLURM, copy the contents of `command.txt` and replace the starting and ending value arguments. 
+To run using SLURM, use `submit_jobs.sh <start> <end>`. This will batch submit SLURM jobs to run permutations <start> through <end> inclusively where each job runs 91 permutations. For example, `submit_jobs.sh 1 200` will submit three jobs, 1 for permutations 1 through 91, 1 for permutations 92 through 182, and 1 for permutations 183 through 200. 
 
 ### Running Individually
 To run the GCC loops, TSVC, or LCALS benchmark, use the following as a guideline:
