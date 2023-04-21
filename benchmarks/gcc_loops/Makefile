@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-CC=clang++
+CC=clang++ -O -Xclang -disable-llvm-passes
 OPT=opt
 
 all: gcc-loops

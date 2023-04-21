@@ -27,7 +27,7 @@
 #---------------------------------------------------------------------------
 # This is the C compiler used for OpenMP programs
 #---------------------------------------------------------------------------
-CC = clang++ -std=c++14
+CC = clang++ -std=c++14 -O -Xclang -disable-llvm-passes
 OPT = opt
 
 
