@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
    // See README-LCALS_instructions.txt file for additional description of how 
    // to control compilation and execution of loop suite.
    //
-   unsigned num_suite_passes = 1;
+   unsigned num_suite_passes = 3;
 #if defined(LCALS_VERIFY_CHECKSUM_ABBREVIATED)
    //
    // When verifying checksums, we only take one pass through the suite of loops
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
    // of iterations of "domain-based" loops by a^N, where N is the 
    // spatial dimension of the domain used by the loop.
    //
-   double loop_length_factor = 6.0;
+   double loop_length_factor = 15.0;
 
    //
    //  Specify which loops lengths to run by true/false
@@ -141,13 +141,13 @@ int main(int argc, char *argv[])
 #if defined(LCALS_DO_OMP_ONLY)
 
    // Loop Subset A: Loops extracted from LLNL app codes.
-   run_loop[PRESSURE_CALC ] = true;
+   //run_loop[PRESSURE_CALC ] = true;
    run_loop[PRESSURE_CALC_ALT ] = true;
    run_loop[ENERGY_CALC   ] = true;
    run_loop[ENERGY_CALC_ALT   ] = true;
    run_loop[VOL3D_CALC    ] = true;
-   run_loop[DEL_DOT_VEC_2D] = true;
-   run_loop[COUPLE        ] = false;
+   // run_loop[DEL_DOT_VEC_2D] = true;
+   run_loop[COUPLE        ] = true;
    run_loop[FIR           ] = true;
 
    // Loop Subset B: "Basic" Loops.
@@ -162,40 +162,40 @@ int main(int argc, char *argv[])
 #else  // else run all loop kernels
 
    // Loop Subset A: Loops extracted from LLNL app codes.
-   run_loop[PRESSURE_CALC ] = true;
-   run_loop[ENERGY_CALC   ] = true;
-   run_loop[VOL3D_CALC    ] = true;
+   // run_loop[PRESSURE_CALC ] = true;
+   // run_loop[ENERGY_CALC   ] = true;
+   // run_loop[VOL3D_CALC    ] = true;
    run_loop[DEL_DOT_VEC_2D] = true;
-   run_loop[COUPLE        ] = false;
-   run_loop[FIR           ] = true;
+   // run_loop[COUPLE        ] = true;
+   // run_loop[FIR           ] = true;
 
    // Loop Subset B: "Basic" Loops.
-   run_loop[INIT3         ] = true;
-   run_loop[MULADDSUB     ] = true;
-   run_loop[IF_QUAD       ] = true;
-   run_loop[TRAP_INT      ] = true;
+   // run_loop[INIT3         ] = true;
+   // run_loop[MULADDSUB     ] = true;
+   // run_loop[IF_QUAD       ] = true;
+   // run_loop[TRAP_INT      ] = true;
 
    // Loop Subset C: Loops from older Livermore Loops in "C" suite.
-   run_loop[HYDRO_1D      ] = true;
-   run_loop[ICCG          ] = true;
-   run_loop[INNER_PROD    ] = true;
-   run_loop[BAND_LIN_EQ   ] = true;
-   run_loop[TRIDIAG_ELIM  ] = true;
-   run_loop[EOS           ] = true;
+   // run_loop[HYDRO_1D      ] = true;
+   // run_loop[ICCG          ] = true;
+   // run_loop[INNER_PROD    ] = true;
+   // run_loop[BAND_LIN_EQ   ] = true;
+   // run_loop[TRIDIAG_ELIM  ] = true;
+   // run_loop[EOS           ] = true;
    run_loop[ADI           ] = true;
-   run_loop[INT_PREDICT   ] = true; 
+   // run_loop[INT_PREDICT   ] = true; 
    run_loop[DIFF_PREDICT  ] = true; 
-   run_loop[FIRST_SUM     ] = true;
-   run_loop[FIRST_DIFF    ] = true;
-   run_loop[PIC_2D        ] = true; 
-   run_loop[PIC_1D        ] = true;
+   // run_loop[FIRST_SUM     ] = true;
+   // run_loop[FIRST_DIFF    ] = true;
+   // run_loop[PIC_2D        ] = true; 
+   // run_loop[PIC_1D        ] = true;
    run_loop[HYDRO_2D      ] = true;
-   run_loop[GEN_LIN_RECUR ] = true;
-   run_loop[DISC_ORD      ] = true;
+   // run_loop[GEN_LIN_RECUR ] = true;
+   // run_loop[DISC_ORD      ] = true;
    run_loop[MAT_X_MAT     ] = true;
-   run_loop[PLANCKIAN     ] = true;
-   run_loop[IMP_HYDRO_2D  ] = true;
-   run_loop[FIND_FIRST_MIN] = true;
+   // run_loop[PLANCKIAN     ] = true;
+   // run_loop[IMP_HYDRO_2D  ] = true;
+   // run_loop[FIND_FIRST_MIN] = true;
 
 #endif
 

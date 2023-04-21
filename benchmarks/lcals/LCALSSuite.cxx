@@ -238,6 +238,7 @@ void defineLoopSuiteRunInfo(const std::vector<LoopVariantID>& run_variants,
             }
 
             case VOL3D_CALC   : {
+               // TODO: Decrease size
                loop_name = std::string("VOL3D_CALC");
 
                loop_stat.loop_weight = weight[ORDER_DEPENDENT]; 
@@ -284,6 +285,8 @@ void defineLoopSuiteRunInfo(const std::vector<LoopVariantID>& run_variants,
             }
 
             case COUPLE   : {
+               // TODO: Decrease size
+               ADomain::loop_length_factor = 1.0;
                loop_name = std::string("COUPLE");
 
                loop_stat.loop_weight = weight[TRANSCENDENTAL]; 
@@ -302,6 +305,7 @@ void defineLoopSuiteRunInfo(const std::vector<LoopVariantID>& run_variants,
                loop_stat.samples_per_pass[LONG]   = 2000;
                loop_stat.samples_per_pass[MEDIUM] = 10000;
                loop_stat.samples_per_pass[SHORT]  = 600000;
+               ADomain::loop_length_factor = loop_length_factor;
 
                break;
             }
