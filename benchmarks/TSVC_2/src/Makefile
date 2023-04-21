@@ -1,9 +1,8 @@
 .PHONY: all clean
 
 libs=-lm
-
-CC=clang-14
-OPT=opt-14
+CC=clang -O -Xclang -disable-llvm-passes
+OPT=opt
 
 all: tsvc
 

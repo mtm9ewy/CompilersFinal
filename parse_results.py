@@ -48,6 +48,19 @@ def parse_lcals_results(directory_path):
     return results
 
 
+def parse_tsvc_results(filepath):
+    results = []
+    with open(filepath, "r") as file:
+        for i, line in enumerate(file.readlines()):
+            # Consume headers
+            if i < 2:
+                continue
+            loop_name, time, _ = line.split()
+            results.append((loop_name.strip(), time.strip()))
+
+    return results
+
+
 def write_results(filename, results):
     with open(f"results/{filename}", "w", newline="") as file:
         writer = csv.writer(file)
@@ -56,12 +69,12 @@ def write_results(filename, results):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
+    if len(sys.argv) != 6:
         print(sys.argv)
         exit()
 
 
-    _, perm, gcc_loops_results_path, lcals_results_dir_path, npb_results_path = sys.argv
+    _, perm, gcc_loops_results_path, lcals_results_dir_path, npb_results_path, tsvc_results_path = sys.argv
     
     results = parse_gcc_loops_results(gcc_loops_results_path)
     write_results(f"{perm}_gcc.csv", results)
@@ -71,3 +84,6 @@ if __name__ == "__main__":
 
     results = parse_npb_results(npb_results_path)
     write_results(f"{perm}_npb.csv", results)
+
+    results = parse_tsvc_results(tsvc_results_path)
+    write_results(f"{perm}_tsvc.csv", results)
