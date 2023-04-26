@@ -27,13 +27,14 @@ def process_benchmark(name, data):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 aggregate_results.py <Number of result files>")
+    if len(sys.argv) != 3:
+        print("Usage: python3 aggregate_results.py <Permutation # of 1st result> <Permutation # of last result>")
 
-    num_files = int(sys.argv[1])
+    start = int(sys.argv[1])
+    stop = int(sys.argv[2])
 
     results = []
-    for i in range(1, num_files + 1):
+    for i in range(start, stop + 1):
         data = {"permutation_number": i}
 
         for benchmark in ["gcc", "tsvc", "npb", "lcals"]:
