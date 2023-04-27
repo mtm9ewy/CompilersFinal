@@ -29,6 +29,7 @@ def process_benchmark(name, data):
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python3 aggregate_results.py <Permutation # of 1st result> <Permutation # of last result>")
+        exit()
 
     start = int(sys.argv[1])
     stop = int(sys.argv[2])
