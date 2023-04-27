@@ -6,10 +6,9 @@ LCALS_DIR="$3"
 NPB_DIR="$4"
 TSVC_DIR="$5"
 
-# Get the permutation on nth line from permuations.txt (1 indexed)
-permutation=$(sed "${permutation_number}q;d" permutations.txt)
-# Get the passes corresonding to this permutation
-opts=$(python3 get_optimizations.py "$permutation")
+# Get the passes corresponding to this permutation
+# Change the below file to run for the 12, 8, and 4 cases
+opts=$(sed "${permutation_number}q;d" permutations.txt)
 
 # Run the GCC Loops benchmark
 cd "benchmarks/${GCC_DIR}"
