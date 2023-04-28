@@ -62,7 +62,7 @@ def parse_tsvc_results(filepath):
 
 
 def write_results(filename, results):
-    with open(f"results/{filename}", "w", newline="") as file:
+    with open(f"temp_results/{filename}", "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow([result[0] for result in results])
         writer.writerow([result[1] for result in results])

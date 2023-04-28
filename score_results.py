@@ -23,9 +23,9 @@ def process_sorted_results(results, scores):
 
 
 if __name__ == "__main__":
-    results_file = "results_16.csv"
+    results_file = "results/results_16.csv"
     passes_file = "optimization_permutations_16.txt"
-    best_file = "best_optimizations_16.txt"
+    best_file = "results/best_optimizations_16.txt"
 
     gcc_results = []
     tsvc_results = []

@@ -11,7 +11,7 @@ module load clang-llvm-14.0.6
 start="$1"
 stop="$2"
 
-mkdir -p results
+mkdir -p temp_results
 
 GCC_DIR="gcc_loops_${start}"
 LCALS_DIR="lcals_${start}"

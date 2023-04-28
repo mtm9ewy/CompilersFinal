@@ -1,7 +1,7 @@
 import csv
 import sys
 
-RESULTS_DIR="results"
+RESULTS_DIR="temp_results"
 
 
 def process_benchmark(name, data):
