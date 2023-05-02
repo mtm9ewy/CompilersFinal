@@ -23,9 +23,10 @@ def process_sorted_results(results, scores):
 
 
 if __name__ == "__main__":
-    results_file = "results/results_16.csv"
-    passes_file = "optimization_permutations_16.txt"
-    best_file = "results/best_optimizations_16.txt"
+    # TODO: Modify these file names
+    results_file = "results/results_12.csv"
+    passes_file = "optimization_permutations_12.txt"
+    best_file = "results/best_optimizations_12.txt"
 
     gcc_results = []
     tsvc_results = []
@@ -83,7 +84,8 @@ if __name__ == "__main__":
             passes_list = [line.strip() for line in file.readlines()]
 
         with open(best_file, "w") as file:
-            for i in range(0, 5):
+            # TODO: Modify this for loop to get the top n results
+            for i in range(0, 25):
                 score, permutation_num = scores[i]
                 print(f"Score: {score}\tPermutation #: {permutation_num}\tOptimizations: {passes_list[permutation_num - 1]}")
                 file.write(passes_list[permutation_num - 1])

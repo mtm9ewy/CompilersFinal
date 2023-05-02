@@ -7,7 +7,7 @@ NPB_DIR="$4"
 TSVC_DIR="$5"
 
 # Get the passes corresponding to this permutation
-# Note: Change the below file to run for the 12, 8, and 4 cases
+# TODO: Change the below file to run for the 12, 8, and 4 cases
 opts=$(sed "${permutation_number}q;d" optimization_permutations_12.txt)
 
 # Run the GCC Loops benchmark
