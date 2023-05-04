@@ -1,0 +1,1 @@
+-mem2reg -loop-simplify -lcssa -loop-rotate -licm -loop-sink -loop-unswitch -loop-unroll -loop-vectorize -loop-distribute -licm -loop-simplify -loop-load-elim -loop-unroll-and-jam -loop-deletion -loop-rotate -loop-extract-single
